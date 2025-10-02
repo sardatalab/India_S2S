@@ -46,7 +46,7 @@ formula.mod.b <- as.formula(paste("consumption_pc ~",
   
   #empty objects to save results
   #matching
-  simcons=subset(data.rec,sel=c(hhid))
+  simcons_match=subset(data.rec,sel=c(hhid))
   #prediction
   simcons_pred=subset(data.rec,sel=c(hhid))
   #R squared
@@ -175,7 +175,7 @@ formula.mod.b <- as.formula(paste("consumption_pc ~",
                           z.vars=don.vars)  
   fA.wrnd = fA.wrnd[,c("hhid","mpce_sp_def_ind")]
   names(fA.wrnd)[2]=paste("mpce_sp_def_ind_",j,sep="")
-  simcons=merge(simcons,fA.wrnd,by="hhid")
+  simcons_match=merge(simcons_match,fA.wrnd,by="hhid")
   rm(samp.atemp,samp.btemp,fA.wrnd,rnd.2)
   }
 
@@ -194,16 +194,16 @@ write.csv(md,file=paste(datapath,
   
   
 #Ensembles match
-  simcons$mpce_sp_def_ind_mean=apply(simcons[,-1],
+  simcons_match$mpce_sp_def_ind_mean=apply(simcons_match[,-1],
                                      1,mean,na.rm=TRUE)
-  simcons$mpce_sp_def_ind_median=apply(simcons[,-1],
+  simcons_match$mpce_sp_def_ind_median=apply(simcons_match[,-1],
                                        1,median,na.rm=TRUE)
-  simcons$mpce_sp_def_ind_geom=apply(simcons[,-1],
+  simcons_match$mpce_sp_def_ind_geom=apply(simcons_match[,-1],
                                      1,geometric_mean,na.rm=TRUE)
-write.csv(simcons,file=paste(datapath,
+write.csv(simcons_match,file=paste(datapath,
         "/Data/Stage 1/Final/Simulations22_match_",sim,".csv",sep=""),
         row.names = FALSE)
-saveRDS(simcons,file=paste(datapath,
+saveRDS(simcons_match,file=paste(datapath,
         "/Data/Stage 1/Final/Simulations22_match_",sim,".rds",sep=""))
 
 #Ensembles pred

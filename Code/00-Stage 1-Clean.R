@@ -16,6 +16,7 @@ state_vars = state_vars[-26] # State 26 does not exist
 data.rec$state <- max.col(data.rec[, state_vars])
 #correct state variable for state 26
 data.rec$state = ifelse(data.rec$state<=25,data.rec$state,data.rec$state+1)
+data.rec$statenum = data.rec$state
 data.rec$state = as.factor(data.rec$state)
 #Regroup hhtype
 type_vars <- paste0("hhtype_", 1:8)
@@ -48,6 +49,7 @@ data.don$hidseq=seq(1:nrow(data.don))
 data.don$state <- max.col(data.don[, state_vars])
 #correct state variable for state 26
 data.don$state = ifelse(data.don$state<=25,data.don$state,data.don$state+1)
+data.don$statenum = data.don$state
 data.don$state = as.factor(data.don$state)
 #Regroup hh type
 data.don$hh_type <- as.factor(max.col(data.don[, type_vars]))
