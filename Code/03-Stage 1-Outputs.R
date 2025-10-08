@@ -95,7 +95,7 @@ ggsave(paste(path,
        width = 30, height = 20, units = "cm")
 
 
-# Table 2
+### Table 2
 
 #Gini coefficient
 gin1= gini.wtd(df[df$survey=="HCES",]$mpce_sp_def_ind,
@@ -109,14 +109,16 @@ write.csv(tab,paste(path,
 
 
 #Overall Poverty
-tab1=svyby(~pov30+pov42+pov83, ~survey, design=svydf, svymean,
+tab1=svyby(~povlic+povlmic+povumic, ~survey, design=svydf, svymean,
            na.rm=TRUE,vartype = "ci")
 
 write.csv(tab1,paste(path,
        "/Outputs/Main/Tables/table 2 poverty.csv",sep=""))
 
+### Figure 10
+
 #Poverty by area
-tab2=svyby(~pov30+pov42+pov83, ~survey+urb, design=svydf, 
+tab2=svyby(~povlic+povlmic+povumic, ~survey+urb, design=svydf, 
            svymean,na.rm=TRUE,vartype = "ci")
 tab2$urb=factor(tab2$urb, levels=c(0,1),labels=c("Rural","Urban"))
 tab2 = tab2 %>% rename(Sector=urb)
@@ -124,7 +126,7 @@ tab2
 
 means_long <- tab2 %>%
   pivot_longer(
-    cols = c(pov30, pov42, pov83),
+    cols = c(povlic,povlmic,povumic),
     names_to = "variable",
     values_to = "mean"
   )
@@ -154,7 +156,7 @@ plot_data <- means_long %>%
 
 # Correct labels in poverty lines
 plot_data$variable=factor(plot_data$variable,
-                levels=c("pov30","pov42","pov83"),
+                levels=c("povlic","povlmic","povumic"),
                 labels=c("$3.0 PPP21","$4.2 PPP21","$8.3 PPP21"))
 
 # Create the bar plot with error bars and facet by variable (rows) and area (columns)
@@ -183,35 +185,37 @@ ggsave(paste(path,
 
 ##################
 #Poverty by State
-tab3=svyby(~pov30+pov42+pov83, ~survey+state_name, design=svydf, 
+tab3=svyby(~povlic+povlmic+povumic, ~survey+state_name, design=svydf, 
            svymean,na.rm=TRUE,keep.var=FALSE)
 
-#Reshape table and export
-tab3_wide_30 <- tab3 %>%
-  select(survey,state_name,statistic.pov30) %>%
-  pivot_wider(names_from = survey, values_from =statistic.pov30)
+# LIC
+tab3_wide_lic <- tab3 %>%
+  select(survey,state_name,statistic.povlic) %>%
+  pivot_wider(names_from = survey, values_from =statistic.povlic)
 
-tab3_wide_30$HCES=100*tab3_wide_30$HCES
-tab3_wide_30$PLFS=100*tab3_wide_30$PLFS
-tab3_wide_30$Diff=with(tab3_wide_30,PLFS-HCES)
-#write.csv(tab3_wide_30,paste(path,
-#                              "/Results/2022 matching/state_pov_30_w.csv",sep=""))
+tab3_wide_lic$HCES=100*tab3_wide_lic$HCES
+tab3_wide_lic$PLFS=100*tab3_wide_lic$PLFS
+tab3_wide_lic$Diff=with(tab3_wide_lic,PLFS-HCES)
+
+#save table
+write.csv(tab3_wide_lic,paste(path,
+       "/Outputs/Main/Tables/state_pov_lic_w.csv",sep=""))
 
 #ranking plot
-tab3_wide_30 <- tab3_wide_30 %>%
+tab3_wide_lic <- tab3_wide_lic %>%
   mutate(
     hces_rank = rank(-HCES, ties.method = "first"),
     plfs_rank = rank(-PLFS, ties.method = "first")
   )
 
 #rank correlation
-cat("Rank correlation is: ",cor(tab3_wide_30$hces_rank,tab3_wide_30$plfs_rank))
+cat("Rank correlation is: ",cor(tab3_wide_lic$hces_rank,tab3_wide_lic$plfs_rank))
 
-ggplot(tab3_wide_30, aes(x = hces_rank, y = plfs_rank)) +
+ggplot(tab3_wide_lic, aes(x = hces_rank, y = plfs_rank)) +
   geom_point(size = 3) +
   geom_text(aes(label = state_name), vjust = -0.5, check_overlap = TRUE) +
-  scale_x_continuous(breaks = 1:nrow(tab3_wide_30)) +
-  scale_y_continuous(breaks = 1:nrow(tab3_wide_30)) +
+  scale_x_continuous(breaks = 1:nrow(tab3_wide_lic)) +
+  scale_y_continuous(breaks = 1:nrow(tab3_wide_lic)) +
   geom_abline(slope = 1, intercept = 0, size=1.3,
               linetype = "dashed", color = "gray") +
   coord_fixed() +
@@ -225,35 +229,38 @@ ggplot(tab3_wide_30, aes(x = hces_rank, y = plfs_rank)) +
     axis.text = element_text(size = 8)   # Reduce axis text size
   )
 ggsave(paste(path,
-             "/Results/2022 matching/State Ranking 3.0.png",sep=""),
+             "/Outputs/Main/Figures/State Ranking lic.png",sep=""),
        width = 20, height = 20, units = "cm")
 
-# 4.2 line
-tab3_wide_42 <- tab3 %>%
-  select(survey,state_name,statistic.pov42) %>%
-  pivot_wider(names_from = survey, values_from =statistic.pov42)
+# LMIC
 
-tab3_wide_42$HCES=100*tab3_wide_42$HCES
-tab3_wide_42$PLFS=100*tab3_wide_42$PLFS
-tab3_wide_42$Diff=with(tab3_wide_42,PLFS-HCES)
+### Figure B 1
 
-#write.csv(tab3_wide_42,paste(path,
-#                             "/Results/2022 matching/state_pov_42_w.csv",sep=""))
+tab3_wide_lmic <- tab3 %>%
+  select(survey,state_name,statistic.povlmic) %>%
+  pivot_wider(names_from = survey, values_from =statistic.povlmic)
+
+tab3_wide_lmic$HCES=100*tab3_wide_lmic$HCES
+tab3_wide_lmic$PLFS=100*tab3_wide_lmic$PLFS
+tab3_wide_lmic$Diff=with(tab3_wide_lmic,PLFS-HCES)
+
+write.csv(tab3_wide_lmic,paste(path,
+                "/Outputs/Main/Tables/state_pov_lmic_w.csv",sep=""))
 #ranking plot
-tab3_wide_42 <- tab3_wide_42 %>%
+tab3_wide_lmic <- tab3_wide_lmic %>%
   mutate(
     hces_rank = rank(-HCES, ties.method = "first"),
     plfs_rank = rank(-PLFS, ties.method = "first")
   )
 
 #rank correlation
-cat("Rank correlation is: ",cor(tab3_wide_42$hces_rank,tab3_wide_42$plfs_rank))
+cat("Rank correlation is: ",cor(tab3_wide_lmic$hces_rank,tab3_wide_lmic$plfs_rank))
 
-ggplot(tab3_wide_42, aes(x = hces_rank, y = plfs_rank)) +
+ggplot(tab3_wide_lmic, aes(x = hces_rank, y = plfs_rank)) +
   geom_point(size = 3) +
   geom_text(aes(label = state_name), vjust = -0.5, check_overlap = TRUE) +
-  scale_x_continuous(breaks = 1:nrow(tab3_wide_42)) +
-  scale_y_continuous(breaks = 1:nrow(tab3_wide_42)) +
+  scale_x_continuous(breaks = 1:nrow(tab3_wide_lmic)) +
+  scale_y_continuous(breaks = 1:nrow(tab3_wide_lmic)) +
   geom_abline(slope = 1, intercept = 0, size=1.3,
               linetype = "dashed", color = "gray") +
   coord_fixed() +
@@ -267,53 +274,14 @@ ggplot(tab3_wide_42, aes(x = hces_rank, y = plfs_rank)) +
     axis.text = element_text(size = .5)   # Reduce axis text size
   )
 ggsave(paste(path,
-             "/Results/2022 matching/State Ranking 4.2.png",sep=""),
+             "/Outputs/Main/Figures/Figure B1 panel B.png",sep=""),
        width = 20, height = 20, units = "cm")
 
+#Barplots
 
-# #8.3 line
-# tab3_wide_83 <- tab3 %>%
-#   select(survey,state,statistic.pov83) %>%
-#   pivot_wider(names_from = survey, values_from =statistic.pov83)
-# 
-# tab3_wide_83$HCES=100*tab3_wide_83$HCES
-# tab3_wide_83$PLFS=100*tab3_wide_83$PLFS
-# tab3_wide_83$Diff=with(tab3_wide_83,PLFS-HCES)
-# 
-# write.csv(tab3_wide_83,paste(path,
-#                              "/Results/2022 matching/state_pov_83_w.csv",sep=""))
-# #ranking plot
-# tab3_wide_83 <- tab3_wide_83 %>%
-#   mutate(
-#     hces_rank = rank(-HCES, ties.method = "first"),
-#     plfs_rank = rank(-PLFS, ties.method = "first")
-#   )
-# ggplot(tab3_wide_83, aes(x = hces_rank, y = plfs_rank)) +
-#   geom_point(size = 3) +
-#   geom_text(aes(label = state), vjust = -0.5, check_overlap = TRUE) +
-#   scale_x_continuous(breaks = 1:nrow(tab3_wide_83)) +
-#   scale_y_continuous(breaks = 1:nrow(tab3_wide_83)) +
-#   geom_abline(slope = 1, intercept = 0, size=1.3,
-#               linetype = "dashed", color = "gray") +
-#   coord_fixed() +
-#   labs(
-#     x = "HCES Ranking (1 = Highest Poverty Rate)",
-#     y = "PLFS Ranking (1 = Highest Poverty Rate)",
-#     title = "State Poverty Rankings ($8.3 PPP21)"
-#   ) +
-#   theme_minimal() +
-#   theme(
-#     axis.text = element_text(size = 8)   # Reduce axis text size
-#   )
-# ggsave(paste(path,
-#              "/Results/2022 matching/State Ranking 8.3.png",sep=""),
-#        width = 20, height = 20, units = "cm")
-
-
-
-#Barplot
-tab3$statistic.pov30=100*tab3$statistic.pov30
-ggplot(tab3, aes(y = as.factor(state_name), x = statistic.pov30, fill = survey)) +
+# LIC
+tab3$statistic.povlic=100*tab3$statistic.povlic
+ggplot(tab3, aes(y = as.factor(state_name), x = statistic.povlic, fill = survey)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +
   labs(y = "State",
        x = "Intl. Poverty Rate at $3.0 2021 PPP (%)",
@@ -322,13 +290,14 @@ ggplot(tab3, aes(y = as.factor(state_name), x = statistic.pov30, fill = survey))
   xlim(c(0,40))+
 theme_minimal()
 ggsave(paste(path,
-             "/Results/2022 matching/Poverty State 3.0.png",sep=""),
+             "/Outputs/Main/Figures/Poverty State lic.png",sep=""),
        width = 30, height = 20, units = "cm")
 
-tab3$statistic.pov42=100*tab3$statistic.pov42
+# LMIC
+tab3$statistic.povlmic=100*tab3$statistic.povlmic
 ggplot(tab3, aes(
   y     = as.factor(state_name),
-  x     = statistic.pov42,
+  x     = statistic.povlmic,
   fill  = survey
 )) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +
@@ -341,33 +310,21 @@ ggplot(tab3, aes(
   xlim(c(0,75))+
   theme_minimal()
 ggsave(paste(path,
-             "/Results/2022 matching/Poverty State 4.2 v2.png",sep=""),
+             "/Outputs/Main/Figures/Figure B1 panel A.png",sep=""),
        width = 30, height = 20, units = "cm")
 
-# ggplot(tab3, aes(y = as.factor(state_name), x = statistic.pov83, fill = survey)) +
-#   geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +
-#   labs(y = "State",
-#        x = "Intl. Poverty Rate at $8.3 2021 PPP (%)",
-#        fill = "Survey",
-#        title = "Actual and imputed poverty rates by state") +
-#   xlim(c(0,1))
-# theme_minimal()
-# ggsave(paste(path,
-#              "/Results/2022 matching/Poverty State 8.3.png",sep=""),
-#        width = 30, height = 20, units = "cm")
-# 
 
 
 
 ####################
 #Density plot of ratio 
-#plfs.don is the harmonized PLFS 2022 with all common variables between the
-#different rounds of the PLFS
-plfs.don=read_dta(paste(path,
-               "/Data/PLFS/IND_2022_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",sep=""))
+#plfs.don is here the harmonized PLFS 2022 with all common variables between the
+#different rounds of the PLFS to be used in stage 2
+plfs.don=read_dta(paste(datapath,
+      "/Data/Stage 2/Cleaned/IND_2022_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",sep=""))
 #We bring the dataset containing the imputed consumption
-plfs.imp=read_dta(paste(path,
-               "/Results/2022 matching/Imputed_PLFS_22_match_1000_v9.dta",sep=""))
+plfs.imp=read_dta(paste(datapath,
+          "/Data/Stage 1/Final/Imputed_PLFS_22_match.dta",sep=""))
 plfs.imp=subset(plfs.imp,select=c(hhid,mpce_sp_def_ind))
 plfs.don=merge(plfs.don,plfs.imp,by="hhid",all.x=TRUE)
 rm(plfs.imp)
@@ -377,11 +334,15 @@ plfs.don=subset(plfs.don,!is.na(mpce_sp_def_ind))
 #abbreviated consumption available in the PLFS.
 plfs.don$ratio = with(plfs.don,
                       mpce_sp_def_ind/consumption_pc_adj)
-#Ratio Density
+
+### Figure 12
+
+#Ridge plot
+
+#Quintiles of imputed consumption
 plfs.don$quintile=xtile(plfs.don$mpce_sp_def_ind,n=5,wt=plfs.don$weight)
 plfs.don$quintile=as.factor(plfs.don$quintile)
 
-#Ridge plot
 ggplot(plfs.don, aes(x = ratio, y = fct_rev(quintile), 
                      weight = weight, fill = quintile)) +
   geom_density_ridges(alpha = 0.5, scale = 1.5, rel_min_height = 0.01) +
@@ -392,10 +353,11 @@ ggplot(plfs.don, aes(x = ratio, y = fct_rev(quintile),
   theme_ridges() + 
   theme(legend.position = "none") 
 ggsave(paste(path,
-             "/Results/PLFS matching/Ridgeplot of ratio by quintile.png",sep=""),
+    "/Outputs/Main/Figures/Figure 12.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 
+#### Figure B4
 
 #HEATMAP OF DECILES
 
@@ -427,7 +389,7 @@ ggplot(heatmap_data, aes(x = decile_mmrp, y = decile_abbr, fill = rel_freq)) +
   ) +
   theme_minimal()
 ggsave(paste(path,
-             "/Results/Paper/Replies to reviewers/Heatmap deciles.png",sep=""),
+        "/Outputs/Main/Figures/Figure B4.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 
