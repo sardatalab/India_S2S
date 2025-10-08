@@ -38,10 +38,10 @@ datapath <- "C:/Users/wb553773/WBG/Nishtha Kochhar - INDDATA/S2S imputations_CES
 # Set global parameters
 
 # Number of simulations stage 1
-nsim1=10
+nsim1=1000
 
 # Number of simulations stage 2
-nsim2=10
+nsim2=100
 
 # Resampling parameter stages 1 and 2
 n.a = .8

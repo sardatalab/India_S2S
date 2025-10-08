@@ -66,9 +66,9 @@ ggsave(paste(path,
 ####Figure 8b
 
 #ECDF
-line300 = log(3.0* (365/12)*icp21*cpi21)
-line420 = log(4.2* (365/12)*icp21*cpi21)
-line830 = log(8.3* (365/12)*icp21*cpi21)
+linelic = log(lic* (365/12)*icp21*cpi21)
+linelmic = log(lmic* (365/12)*icp21*cpi21)
+lineumic = log(umic* (365/12)*icp21*cpi21)
 
 df_ecdf <- df %>%
   group_by(survey) %>%
@@ -83,12 +83,12 @@ ggplot(df_ecdf, aes(x = log(mpce_sp_def_ind), y = ecdf, color = survey)) +
   labs(x = "Log Consumption",
        y = "Density",
        title = "ECDF of Original and Imputed Log Consumption by survey (2022-23)")+
-  geom_vline(xintercept = line300,linetype="dashed",size=0.5)+
-  geom_vline(xintercept = line420,linetype="dashed",size=0.5)+
-  geom_vline(xintercept = line830,linetype="dashed",size=0.5)+
-  annotate("text", x = line300, y = 0, label = "3.0", vjust = 1.5,size=1)+
-  annotate("text", x = line420, y = 0, label = "4.2", vjust = 1.5,size=1)+
-  annotate("text", x = line830, y = 0, label = "8.3", vjust = 1.5,size=1)
+  geom_vline(xintercept = linelic,linetype="dashed",size=0.5)+
+  geom_vline(xintercept = linelmic,linetype="dashed",size=0.5)+
+  geom_vline(xintercept = lineumic,linetype="dashed",size=0.5)+
+  annotate("text", x = linelic, y = 0, label = "3.0", vjust = 1.5,size=1)+
+  annotate("text", x = linelmic, y = 0, label = "4.2", vjust = 1.5,size=1)+
+  annotate("text", x = lineumic, y = 0, label = "8.3", vjust = 1.5,size=1)
 
 ggsave(paste(path,
         "/Outputs/Main/Figures/figure 8b.png",sep=""),
