@@ -61,6 +61,11 @@ don.vars2=c("mpce_sp_def_ind") #variables to be imputed
 cpi21=1.101906
 icp21=19.46895
 
+# International poverty lines in 2021 PPP
+lic=3.0
+lmic=4.2
+umic=8.3
+
 # Run the R scripts
 
 #Stage 1

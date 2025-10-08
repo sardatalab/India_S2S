@@ -7,11 +7,10 @@ states=read_excel(paste0(datapath,
 data.rec2=merge(data.rec2,states,by.x="statenum",by.y="state",all.x=TRUE)
 data.don=merge(data.don,states,by.x="statenum",by.y="state",all.x=TRUE)
 #######
-#######
 
-#Poverty calculations
+# Poverty calculations
 
-# 2. Subset and add survey identifier
+# Subset and add survey identifier
 plfs <- data.rec2 %>%
   filter(!is.na(mpce_sp_def_ind)) %>%
   select(state_name, urb, mpce_sp_def_ind, pop_wgt) %>%
@@ -21,8 +20,7 @@ hces <- data.don %>%
   select(state_name, urb, mpce_sp_def_ind, pop_wgt) %>%
   mutate(survey = "HCES")
 
-# 3. Convert any labelled columns to plain numeric.
-#    Here we assume mpce_sp_def_ind and pop_wgt might be labelled:
+# Ensure any labelled columns to plain numeric.
 plfs <- plfs %>%
   mutate(
     mpce_sp_def_ind = as.numeric(mpce_sp_def_ind),
@@ -35,14 +33,15 @@ hces <- hces %>%
     pop_wgt         = as.numeric(pop_wgt)
   )
 
-# 4. Now you can safely row‐bind
+# Append
 df <- bind_rows(plfs, hces)
 
+# Remove NAs
 df=na.omit(df)
 
-df$pov30 = ifelse(df$mpce_sp_def_ind*(12/365)/cpi21/icp21<3,1,0)
-df$pov42 = ifelse(df$mpce_sp_def_ind*(12/365)/cpi21/icp21<4.2,1,0)
-df$pov83 = ifelse(df$mpce_sp_def_ind*(12/365)/cpi21/icp21<8.3,1,0)
+df$povlic = ifelse(df$mpce_sp_def_ind*(12/365)/cpi21/icp21<lic,1,0)
+df$povlmic = ifelse(df$mpce_sp_def_ind*(12/365)/cpi21/icp21<lmic.2,1,0)
+df$povumic = ifelse(df$mpce_sp_def_ind*(12/365)/cpi21/icp21<umic,1,0)
 
 #Set as survey
 svydf <- svydesign(ids = ~1, data = df, 
