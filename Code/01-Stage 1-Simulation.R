@@ -18,26 +18,41 @@ compute_r_squared <- function(actual, predicted) {
   return(r_squared)
 }
 ######
-
+geometric_mean <- function(x, na.rm = TRUE) {
+    if (na.rm) {
+        x <- x[!is.na(x)]
+    }
+    if(any(x <= 0)) {
+        stop("All values must be positive to compute the geometric mean.")
+    }
+    exp(mean(log(x)))
+}
 #number of simulations
 sim = nsim1
 
 #Define variables to be used in the models
 #Extract variable names starting with "hh_" and "sh_"
-hh_vars = grep("^hh_", names(data.don), value = TRUE)
+hh_vars = grep("^have_", names(data.don), value = TRUE)
+hhh_vars = grep("^_hhh", names(data.don), value = TRUE)
 sh_vars = grep("^shr_", names(data.don), value = TRUE)
-mx_vars = grep("^max_", names(data.don), value = TRUE)
-oth_vars = c("urb","state")
+#mx_vars = grep("^max_", names(data.don), value = TRUE)
+age_vars = grep("^age_", names(data.don), value = TRUE)
+edu_vars = grep("^edu_", names(data.don), value = TRUE)
+econ_vars = grep("^have_", names(data.don), value = TRUE)
+disab_vars = grep("^_disab_^", names(data.don), value = TRUE)
+inc_vars  = grep("rpcinc1", names(data.don), value = TRUE) 
+oth_vars = c("urban","district")
 
 #Combine the covariate names
 #covariates <- names(data.rec) #to include all available variables in receiver data set
-covariates <- c(hh_vars, sh_vars,mx_vars,oth_vars,"hidseq") #include mx vars
-#covariates <- c(hh_vars, sh_vars,oth_vars)
+covariates <- c(hh_vars, sh_vars,hhh_vars,age_vars,edu_vars,econ_vars, disab_vars, inc_vars ,oth_vars,"hidseq") #include mx vars
+covariates <- unique(covariates)
 
+data.rec$fic_dep_var=1
 # Create the formula 
-formula.mod.a <- as.formula(paste("mpce_sp_def_ind ~", 
+formula.mod.a <- as.formula(paste("welfare ~", 
                             paste(covariates, collapse = " + ")))
-formula.mod.b <- as.formula(paste("consumption_pc ~", 
+formula.mod.b <- as.formula(paste("fic_dep_var ~", 
                                  paste(covariates, collapse = " + ")))
 
   #prepare global matching parameters
@@ -68,44 +83,45 @@ formula.mod.b <- as.formula(paste("consumption_pc ~",
 
     #Sample (preserves state participation in sample)
     train.a <- data.don %>%
-      group_by(state) %>%
+      group_by(district) %>%
       sample_frac(n.a)
     
     #Make sure all donation classes have sufficient data
-    if (min(table(train.a$state,train.a$hh_type))>0){
-      group.v <- c("state","hh_type")  # donation classes
+    if (min(table(train.a$district,train.a$urban))>0){
+      group.v <- c("district","urban")  # donation classes
     }  else {
-      group.v <- c("state","urb")  # donation classes
+      group.v <- c("district","urban")  # donation classes
     }
     #subset to model covariates
-    train.a = train.a[,c("mpce_sp_def_ind",hh_vars, sh_vars,mx_vars,oth_vars)] 
+    train.a = train.a[,unique(c("welfare",hh_vars, sh_vars,hhh_vars,age_vars,
+                                edu_vars,econ_vars, disab_vars, inc_vars ,oth_vars))] 
     #remove NAs for training
     train.a=na.omit(train.a)
     #Design matrix for training model
-    mod.a=lm(mpce_sp_def_ind~.,data=train.a)
+    mod.a=lm(welfare~.,data=train.a)
     X.a = model.matrix(mod.a)
-    y.a = as.matrix(train.a$mpce_sp_def_ind)
+    y.a = as.matrix(train.a$welfare)
     y.a= log(y.a+1)
   
-    #Estimation
-    #AdapLASSO
-    cv.ridge1 = cv.glmnet(X.a, y=y.a,alpha=0)
-    ridge_coefs1 <- coef(cv.ridge1, s = "lambda.min")
-    # Compute adaptive weights (inverse of absolute Ridge coefficients)
-    # We exclude the intercept (ridge_coefs[1])
-    # Adding small value to avoid division by zero
-    adapt_wgts1 <- 1 / (abs(ridge_coefs1[-1]) + 1e-6)
-    #Fit Lasso through CV using adaptive weights
-    cv.lasso1 = cv.glmnet(X.a, y=y.a,
-                          penalty.factor = adapt_wgts1)
-    best.lambda1 = cv.lasso1$lambda.min
-    lasso_best1 <- glmnet(X.a, y=y.a, alpha = 1, 
-                          lambda = best.lambda1, 
-                          penalty.factor = adapt_wgts1)
-
-    #Predict log consumption using Adaplasso
-    Ya.al<-predict(lasso_best1, newx=X.a, s=best.lambda1)
-    r2_al <- compute_r_squared(y.a, Ya.al)
+   #  #Estimation
+   # #AdapLASSO
+   #  cv.ridge1 = cv.glmnet(X.a, y=y.a,alpha=0)
+   #  ridge_coefs1 <- coef(cv.ridge1, s = "lambda.min")
+   #  # Compute adaptive weights (inverse of absolute Ridge coefficients)
+   #  # We exclude the intercept (ridge_coefs[1])
+   #  # Adding small value to avoid division by zero
+   #  adapt_wgts1 <- 1 / (abs(ridge_coefs1[-1]) + 1e-6)
+   #  #Fit Lasso through CV using adaptive weights
+   #  cv.lasso1 = cv.glmnet(X.a, y=y.a,
+   #                        penalty.factor = adapt_wgts1)
+   #  best.lambda1 = cv.lasso1$lambda.min
+   #  lasso_best1 <- glmnet(X.a, y=y.a, alpha = 1, 
+   #                        lambda = best.lambda1, 
+   #                        penalty.factor = adapt_wgts1)
+   # 
+   #  #Predict log consumption using Adaplasso
+   #  Ya.al<-predict(lasso_best1, newx=X.a, s=best.lambda1)
+   #  r2_al <- compute_r_squared(y.a, Ya.al)
 
     #LASSO
     cv.lasso2 = cv.glmnet(X.a, y=y.a, alpha=1)
@@ -138,7 +154,7 @@ formula.mod.b <- as.formula(paste("consumption_pc ~",
   
   #save predictions from best model on PLFS
   Pred_Yb=data.table(cbind(data.rec[,"hhid"], exp(Yb)-1))
-  names(Pred_Yb)=c("hhid",paste("mpce_sp_def_ind_",j,sep=""))
+  names(Pred_Yb)=c("hhid",paste("welfare_",j,sep=""))
   simcons_pred=merge(simcons_pred,Pred_Yb,by="hhid")
   
   #Calculate consumption predictions on both surveys
@@ -173,8 +189,8 @@ formula.mod.b <- as.formula(paste("consumption_pc ~",
   fA.wrnd <- create.fused(data.rec=samp.btemp, data.don=samp.atemp,
                           mtc.ids=rnd.2$mtc.ids,
                           z.vars=don.vars)  
-  fA.wrnd = fA.wrnd[,c("hhid","mpce_sp_def_ind")]
-  names(fA.wrnd)[2]=paste("mpce_sp_def_ind_",j,sep="")
+  fA.wrnd = fA.wrnd[,c("hhid","welfare")]
+  names(fA.wrnd)[2]=paste("welfare_",j,sep="")
   simcons_match=merge(simcons_match,fA.wrnd,by="hhid")
   rm(samp.atemp,samp.btemp,fA.wrnd,rnd.2)
   }
@@ -185,46 +201,46 @@ stopCluster(cl)
 #save simulations results
 #R-squared
 write.csv(r2,file=paste(datapath,
-   "/Outputs/Intermediate/Simulations22_R2_",sim,".csv",sep=""),
+   "cleaned/Outputs/Intermediate/Simulations22_R2_",sim,".csv",sep=""),
             row.names = FALSE)
 #Model used
 write.csv(md,file=paste(datapath,
-    "/Outputs/Intermediate/Simulations22_model_used_",sim,".csv",sep=""),
+    "cleaned/Outputs/Intermediate/Simulations22_model_used_",sim,".csv",sep=""),
             row.names = FALSE)
   
   
 #Ensembles match
-  simcons_match$mpce_sp_def_ind_mean=apply(simcons_match[,-1],
+  simcons_match$welfare_mean=apply(simcons_match[,-1],
                                      1,mean,na.rm=TRUE)
-  simcons_match$mpce_sp_def_ind_median=apply(simcons_match[,-1],
+  simcons_match$welfare_median=apply(simcons_match[,-1],
                                        1,median,na.rm=TRUE)
-  simcons_match$mpce_sp_def_ind_geom=apply(simcons_match[,-1],
+  simcons_match$welfare_geom=apply(simcons_match[,-1],
                                      1,geometric_mean,na.rm=TRUE)
 write.csv(simcons_match,file=paste(datapath,
-        "/Data/Stage 1/Final/Simulations22_match_",sim,".csv",sep=""),
+        "cleaned/Stage 1/Final/Simulations22_match_",sim,".csv",sep=""),
         row.names = FALSE)
 saveRDS(simcons_match,file=paste(datapath,
-        "/Data/Stage 1/Final/Simulations22_match_",sim,".rds",sep=""))
+        "cleaned/Stage 1/Final/Simulations22_match_",sim,".rds",sep=""))
 
 #Ensembles pred
-simcons_pred$mpce_sp_def_ind_mean=apply(simcons_pred[,-1],
+simcons_pred$welfare_mean=apply(simcons_pred[,-1],
                                    1,mean,na.rm=TRUE)
-simcons_pred$mpce_sp_def_ind_median=apply(simcons_pred[,-1],
+simcons_pred$welfare_median=apply(simcons_pred[,-1],
                                      1,median,na.rm=TRUE)
-simcons_pred$mpce_sp_def_ind_geom=apply(simcons_pred[,-1],
+simcons_pred$welfare_geom=apply(simcons_pred[,-1],
                                    1,geometric_mean,na.rm=TRUE)
 
 write.csv(simcons_pred,file=paste(datapath,
-       "/Data/Stage 1/Final/Simulations22_pred_",sim,".csv",sep=""),
+       "cleaned/Stage 1/Final/Simulations22_pred_",sim,".csv",sep=""),
           row.names = FALSE)
 saveRDS(simcons_pred,file=paste(datapath,
-      "/Data/Stage 1/Final/Simulations22_pred_",sim,".rds",sep=""))
+      "cleaned/Stage 1/Final/Simulations22_pred_",sim,".rds",sep=""))
 
 #Ensemble coefficients
 coefs$coef=apply(coefs, 1,mean,na.rm=TRUE)
 
 write.csv(coefs,file=paste(datapath,
-      "/Outputs/Intermediate/Simulations22_coefficients_",sim,".csv",
+      "cleaned/Outputs/Intermediate/Simulations22_coefficients_",sim,".csv",
        sep=""),
           row.names = TRUE)
 

@@ -13,10 +13,10 @@ compute_wasserstein_distance <- function(original, predicted_matrix) {
 
 #Add state and sector to predictions
 simcons_match <- simcons_match %>%
-  left_join(data.rec %>% select(hhid, state, urb), by = "hhid")
+  left_join(data.rec %>% select(hhid, district, urban), by = "hhid")
 
 simcons_pred <- simcons_pred %>%
-  left_join(data.rec %>% select(hhid, state, urb), by = "hhid")
+  left_join(data.rec %>% select(hhid, district, urban), by = "hhid")
 
 # Missing values report
 missing_report.match <- simcons_match %>%
@@ -48,38 +48,35 @@ hhid_pred <- list()
 #data.don=na.omit(data.don)
 
 # Group state-sector data using lists
-foreach (i = c(1:25, 27:37)) %do% { 
-  foreach (a = c(0,1)) %do% {
-    cat("State", i, "Sector", a, "\n",sep=" ")
+foreach (i=unique(data.don$district)) %do% { 
+    cat("District", i, "\n",sep=" ")
     
     # Original distribution in HCES
-    original_data[[paste(i, a, sep = "_")]] <- as.numeric(subset(data.don,
-                                 state == i & urb == a)$mpce_sp_def_ind)
+    original_data[[i]] <- as.numeric(subset(data.don,
+                                 district == i )$welfare)
     
     # Matching: Extract `hhid` first, then filter numeric variables
     match_filtered <- simcons_match %>%
-      filter(state == i & urb == a)  
+      filter(district == i )  
     
-    hhid_match[[paste(i, a, sep = "_")]] <- match_filtered$hhid  # Store `hhid`
+    hhid_match[[i]] <- match_filtered$hhid  # Store `hhid`
     
     pred_matrix_match <- match_filtered %>%  
-      select(starts_with("mpce_")) %>%  # Only numeric values
+      select(starts_with("welfare_")) %>%  # Only numeric values
       as.matrix()
     
-    sim_data_match[[paste(i, a, sep = "_")]] <- pred_matrix_match
+    sim_data_match[[i]] <- pred_matrix_match
     
     # Predictions: Extract hhid first, then filter numeric variables
     pred_filtered <- simcons_pred %>%
-      filter(state == i & urb == a)  
-    
-    hhid_pred[[paste(i, a, sep = "_")]] <- pred_filtered$hhid  # Store hhid
+      filter(district == i )
+    hhid_pred[[i]] <- pred_filtered$hhid  # Store hhid
     
     pred_matrix_pred <- pred_filtered %>%
-      select(starts_with("mpce_")) %>%
+      select(starts_with("welfare_")) %>%
       as.matrix()
     
-    sim_data_pred[[paste(i, a, sep = "_")]] <- pred_matrix_pred
-  }
+    sim_data_pred[[i]] <- pred_matrix_pred
 }
 
 # Store predicted vectors for each state-sector
@@ -104,12 +101,12 @@ for (key in names(original_data)) {
   # Store the closest simulated vector
   sel_predictions_match[[key]] <- data.frame(
     hhid = hhid_match[[key]],  # Merge with hhid
-    mpce_sp_def_ind = sim_data_match[[key]][, closest_index_match[[key]]]
+    welfare = sim_data_match[[key]][, closest_index_match[[key]]]
   )
   
   sel_predictions_pred[[key]] <- data.frame(
     hhid = hhid_pred[[key]],  # Merge with hhid
-    mpce_sp_def_ind = sim_data_pred[[key]][, closest_index_pred[[key]]]
+    welfare = sim_data_pred[[key]][, closest_index_pred[[key]]]
   )
 }
 
@@ -130,10 +127,10 @@ head(final_pred_df)
 #Keep prediction-based imputation
 data.rec2=merge(data.rec,final_pred_df,by="hhid",all.x = TRUE)
 write_dta(data.rec,paste(datapath,
-     "/Data/Stage 1/Final/Imputed_PLFS_22_pred.dta",sep=""))
+     "cleaned/Stage 1/Final/Imputed_PLFS_22_pred.dta",sep=""))
 
 
 #Keep matching-based imputation using distributional distance
 data.rec2=merge(data.rec,final_match_df,by="hhid",all.x = TRUE)
 write_dta(data.rec2,paste(datapath,
-      "/Data/Stage 1/Final/Imputed_PLFS_22_match.dta",sep=""))
+      "cleaned/Stage 1/Final/Imputed_PLFS_22_match.dta",sep=""))

@@ -2,7 +2,7 @@
 
 #Bring States names
 states=read_excel(paste0(datapath,
-            "/Data/Stage 1/Cleaned/2022 matching/states.xlsx"))
+            "cleaned/Stage 1/Cleaned/2022 matching/states.xlsx"))
 
 data.rec2=merge(data.rec2,states,by.x="statenum",by.y="state",all.x=TRUE)
 data.don=merge(data.don,states,by.x="statenum",by.y="state",all.x=TRUE)
@@ -12,53 +12,53 @@ data.don=merge(data.don,states,by.x="statenum",by.y="state",all.x=TRUE)
 #Poverty calculations
 
 # 2. Subset and add survey identifier
-plfs <- data.rec2 %>%
-  filter(!is.na(mpce_sp_def_ind)) %>%
-  select(state_name, urb, mpce_sp_def_ind, pop_wgt) %>%
-  mutate(survey = "PLFS")
+lfs <- data.rec2 %>%
+  filter(!is.na(welfare)) %>%
+  select(district, urban, welfare, popwt) %>%
+  mutate(survey = "LFS")
 
-hces <- data.don %>%
-  select(state_name, urb, mpce_sp_def_ind, pop_wgt) %>%
-  mutate(survey = "HCES")
+hies <- data.don %>%
+  select(district, urban, welfare, popwt) %>%
+  mutate(survey = "HIES")
 
 # 3. Convert any labelled columns to plain numeric.
-#    Here we assume mpce_sp_def_ind and pop_wgt might be labelled:
-plfs <- plfs %>%
+#    Here we assume welfare and popwt might be labelled:
+lfs <- lfs %>%
   mutate(
-    mpce_sp_def_ind = as.numeric(mpce_sp_def_ind),
-    pop_wgt         = as.numeric(pop_wgt)
+    welfare = as.numeric(welfare),
+    popwt         = as.numeric(popwt)
   )
 
-hces <- hces %>%
+hies <- hies %>%
   mutate(
-    mpce_sp_def_ind = as.numeric(mpce_sp_def_ind),
-    pop_wgt         = as.numeric(pop_wgt)
+    welfare = as.numeric(welfare),
+    popwt         = as.numeric(popwt)
   )
 
 # 4. Now you can safely row‐bind
-df <- bind_rows(plfs, hces)
+df <- bind_rows(lfs, hies)
 
 df=na.omit(df)
 
-df$pov30 = ifelse(df$mpce_sp_def_ind*(12/365)/cpi21/icp21<3,1,0)
-df$pov42 = ifelse(df$mpce_sp_def_ind*(12/365)/cpi21/icp21<4.2,1,0)
-df$pov83 = ifelse(df$mpce_sp_def_ind*(12/365)/cpi21/icp21<8.3,1,0)
+df$pov30 = ifelse(df$welfare*(12/365)/cpi21/icp21<3,1,0)
+df$pov42 = ifelse(df$welfare*(12/365)/cpi21/icp21<4.2,1,0)
+df$pov83 = ifelse(df$welfare*(12/365)/cpi21/icp21<8.3,1,0)
 
 #Set as survey
 svydf <- svydesign(ids = ~1, data = df, 
-                   weights = ~pop_wgt)
+                   weights = ~popwt)
 
 #Tables and graphs
 
 ###Figure 8a
 
 #Density of predicted consumption
-ggplot(df, aes(x = log(mpce_sp_def_ind), weight = pop_wgt,
+ggplot(df, aes(x = log(welfare), weight = popwt,
                fill = survey)) +
   geom_density(alpha = 0.4, adjust=1.5) +
   labs(x = "Log Consumption",
        y = "Density",
-       title = "Original and Imputed Log Consumption by Survey (2022-23)")
+       title = "Original and Imputed Log Consumption by Survey (2019)")
 
 ggsave(paste(path,
              "/Outputs/Main/Figures/figure 8a.png",sep=""),
@@ -73,13 +73,13 @@ line830 = log(8.3* (365/12)*icp21*cpi21)
 
 df_ecdf <- df %>%
   group_by(survey) %>%
-  arrange(log_consumption = log(mpce_sp_def_ind)) %>%
-  mutate(cum_weight = cumsum(pop_wgt),
-         total_weight = sum(pop_wgt),
+  arrange(log_consumption = log(welfare)) %>%
+  mutate(cum_weight = cumsum(popwt),
+         total_weight = sum(popwt),
          ecdf = cum_weight / total_weight)
 
 
-ggplot(df_ecdf, aes(x = log(mpce_sp_def_ind), y = ecdf, color = survey)) +
+ggplot(df_ecdf, aes(x = log(welfare), y = ecdf, color = survey)) +
   geom_step() +
   labs(x = "Log Consumption",
        y = "Density",
@@ -99,12 +99,12 @@ ggsave(paste(path,
 # Table 2
 
 #Gini coefficient
-gin1= gini.wtd(df[df$survey=="HCES",]$mpce_sp_def_ind,
-         df[df$survey=="HCES",]$pop_wgt)
+gin1= gini.wtd(df[df$survey=="HIES",]$welfare,
+         df[df$survey=="HIES",]$popwt)
 
-gin2 = gini.wtd(df[df$survey=="PLFS",]$mpce_sp_def_ind,
-         df[df$survey=="PLFS",]$pop_wgt)
-tab = data.frame(survey=c("HCES,PLFS"),gini=c(gini1,gini2))
+gin2 = gini.wtd(df[df$survey=="LFS",]$welfare,
+         df[df$survey=="LFS",]$popwt)
+tab = data.frame(survey=c("HIES,LFS"),gini=c(gin1,gin2))
 write.csv(tab,paste(path,
    "/Outputs/Main/Tables/table 2 gini.csv",sep=""))
 
@@ -117,10 +117,10 @@ write.csv(tab1,paste(path,
        "/Outputs/Main/Tables/table 2 poverty.csv",sep=""))
 
 #Poverty by area
-tab2=svyby(~pov30+pov42+pov83, ~survey+urb, design=svydf, 
+tab2=svyby(~pov30+pov42+pov83, ~survey+urban, design=svydf, 
            svymean,na.rm=TRUE,vartype = "ci")
-tab2$urb=factor(tab2$urb, levels=c(0,1),labels=c("Rural","Urban"))
-tab2 = tab2 %>% rename(Sector=urb)
+tab2$urban=factor(tab2$urban, levels=c(0,1),labels=c("Rural","Urban"))
+tab2 = tab2 %>% rename(Sector=urban)
 tab2
 
 means_long <- tab2 %>%
@@ -184,12 +184,12 @@ ggsave(paste(path,
 
 ##################
 #Poverty by State
-tab3=svyby(~pov30+pov42+pov83, ~survey+state_name, design=svydf, 
+tab3=svyby(~pov30+pov42+pov83, ~survey+district, design=svydf, 
            svymean,na.rm=TRUE,keep.var=FALSE)
 
 #Reshape table and export
 tab3_wide_30 <- tab3 %>%
-  select(survey,state_name,statistic.pov30) %>%
+  select(survey,district,statistic.pov30) %>%
   pivot_wider(names_from = survey, values_from =statistic.pov30)
 
 tab3_wide_30$HCES=100*tab3_wide_30$HCES
@@ -210,7 +210,7 @@ cat("Rank correlation is: ",cor(tab3_wide_30$hces_rank,tab3_wide_30$plfs_rank))
 
 ggplot(tab3_wide_30, aes(x = hces_rank, y = plfs_rank)) +
   geom_point(size = 3) +
-  geom_text(aes(label = state_name), vjust = -0.5, check_overlap = TRUE) +
+  geom_text(aes(label = district), vjust = -0.5, check_overlap = TRUE) +
   scale_x_continuous(breaks = 1:nrow(tab3_wide_30)) +
   scale_y_continuous(breaks = 1:nrow(tab3_wide_30)) +
   geom_abline(slope = 1, intercept = 0, size=1.3,
@@ -231,7 +231,7 @@ ggsave(paste(path,
 
 # 4.2 line
 tab3_wide_42 <- tab3 %>%
-  select(survey,state_name,statistic.pov42) %>%
+  select(survey,district,statistic.pov42) %>%
   pivot_wider(names_from = survey, values_from =statistic.pov42)
 
 tab3_wide_42$HCES=100*tab3_wide_42$HCES
@@ -252,7 +252,7 @@ cat("Rank correlation is: ",cor(tab3_wide_42$hces_rank,tab3_wide_42$plfs_rank))
 
 ggplot(tab3_wide_42, aes(x = hces_rank, y = plfs_rank)) +
   geom_point(size = 3) +
-  geom_text(aes(label = state_name), vjust = -0.5, check_overlap = TRUE) +
+  geom_text(aes(label = district), vjust = -0.5, check_overlap = TRUE) +
   scale_x_continuous(breaks = 1:nrow(tab3_wide_42)) +
   scale_y_continuous(breaks = 1:nrow(tab3_wide_42)) +
   geom_abline(slope = 1, intercept = 0, size=1.3,
@@ -314,7 +314,7 @@ ggsave(paste(path,
 
 #Barplot
 tab3$statistic.pov30=100*tab3$statistic.pov30
-ggplot(tab3, aes(y = as.factor(state_name), x = statistic.pov30, fill = survey)) +
+ggplot(tab3, aes(y = as.factor(district), x = statistic.pov30, fill = survey)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +
   labs(y = "State",
        x = "Intl. Poverty Rate at $3.0 2021 PPP (%)",
@@ -328,7 +328,7 @@ ggsave(paste(path,
 
 tab3$statistic.pov42=100*tab3$statistic.pov42
 ggplot(tab3, aes(
-  y     = as.factor(state_name),
+  y     = as.factor(district),
   x     = statistic.pov42,
   fill  = survey
 )) +
@@ -345,7 +345,7 @@ ggsave(paste(path,
              "/Results/2022 matching/Poverty State 4.2 v2.png",sep=""),
        width = 30, height = 20, units = "cm")
 
-# ggplot(tab3, aes(y = as.factor(state_name), x = statistic.pov83, fill = survey)) +
+# ggplot(tab3, aes(y = as.factor(district), x = statistic.pov83, fill = survey)) +
 #   geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +
 #   labs(y = "State",
 #        x = "Intl. Poverty Rate at $8.3 2021 PPP (%)",
@@ -369,17 +369,17 @@ plfs.don=read_dta(paste(path,
 #We bring the dataset containing the imputed consumption
 plfs.imp=read_dta(paste(path,
                "/Results/2022 matching/Imputed_PLFS_22_match_1000_v9.dta",sep=""))
-plfs.imp=subset(plfs.imp,select=c(hhid,mpce_sp_def_ind))
+plfs.imp=subset(plfs.imp,select=c(hhid,welfare))
 plfs.don=merge(plfs.don,plfs.imp,by="hhid",all.x=TRUE)
 rm(plfs.imp)
-plfs.don=subset(plfs.don,!is.na(mpce_sp_def_ind))
+plfs.don=subset(plfs.don,!is.na(welfare))
 #The ratio is calculated by dividing the imputed consumption by the
 #previously deflated and temporaly adjusted 
 #abbreviated consumption available in the PLFS.
 plfs.don$ratio = with(plfs.don,
-                      mpce_sp_def_ind/consumption_pc_adj)
+                      welfare/consumption_pc_adj)
 #Ratio Density
-plfs.don$quintile=xtile(plfs.don$mpce_sp_def_ind,n=5,wt=plfs.don$weight)
+plfs.don$quintile=xtile(plfs.don$welfare,n=5,wt=plfs.don$weight)
 plfs.don$quintile=as.factor(plfs.don$quintile)
 
 #Ridge plot
@@ -400,7 +400,7 @@ ggsave(paste(path,
 
 #HEATMAP OF DECILES
 
-plfs.don$decile_mmrp=xtile(plfs.don$mpce_sp_def_ind,n=10,wt=plfs.don$weight)
+plfs.don$decile_mmrp=xtile(plfs.don$welfare,n=10,wt=plfs.don$weight)
 plfs.don$decile_abbr=xtile(plfs.don$consumption_pc_adj,n=10,wt=plfs.don$weight)
 
 des <- svydesign(ids = ~1, weights = ~weight, data = plfs.don)
