@@ -19,6 +19,16 @@ compute_r_squared <- function(actual, predicted) {
 }
 ######
 
+geometric_mean <- function(x, na.rm = TRUE) {
+  if (na.rm) {
+    x <- x[!is.na(x)]
+  }
+  if(any(x <= 0)) {
+    stop("All values must be positive to compute the geometric mean.")
+  }
+  exp(mean(log(x)))
+}
+
 #number of simulations
 sim = nsim1
 
