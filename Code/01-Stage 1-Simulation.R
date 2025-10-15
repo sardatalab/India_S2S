@@ -32,21 +32,27 @@ sim = nsim1
 
 #Define variables to be used in the models
 #Extract variable names starting with "hh_" and "sh_"
-hh_vars = grep("^have_", names(data.don), value = TRUE)
-hhh_vars = grep("^_hhh", names(data.don), value = TRUE)
-sh_vars = grep("^shr_", names(data.don), value = TRUE)
-#mx_vars = grep("^max_", names(data.don), value = TRUE)
-age_vars = grep("^age_", names(data.don), value = TRUE)
-edu_vars = grep("^edu_", names(data.don), value = TRUE)
-econ_vars = grep("^have_", names(data.don), value = TRUE)
-disab_vars = grep("^_disab_^", names(data.don), value = TRUE)
-inc_vars  = grep("rpcinc1", names(data.don), value = TRUE) 
-oth_vars = c("urban","district")
+hh_vars = c("hhsize","hhsize_sq","age_avg","avg_age_sq","share_dep","share_kids","sh_mem_014",
+            "sh_mem_1564","sh_mem_male","has_in_school","sh_in_school")
+hhh_vars = c("buddhist_hhh","married_hhh","sinhala_hhh","female_hhh","age_hhh", 
+             "edu_hhh_none","edu_hhh_prim","edu_hhh_sec","edu_hhh_secincomp","edu_hhh_high")
+econ_vars = c("hh_main_agri","hh_main_ind","hh_main_serv","have_agri_emp","have_constr_emp",
+              "have_ind_emp","have_public_emp","have_semiskilled_worker", "sh_selfempl","public_emp_hhh")
+disab_vars = c("has_conc_disab","has_comms_disab","eye_disab_hhh","hear_disab_hhh") #larger differences so dropping for now- can use in step 2
+inc_vars    = c("ln_rpcinc1", "sh_wages","sh_selfemp")
+oth_vars    = c("urban","province")
 
 #Combine the covariate names
 #covariates <- names(data.rec) #to include all available variables in receiver data set
-covariates <- c(hh_vars, sh_vars,hhh_vars,age_vars,edu_vars,econ_vars, disab_vars, inc_vars ,oth_vars,"hidseq") #include mx vars
+covariates <- c(hh_vars,hhh_vars, econ_vars, inc_vars ,oth_vars,"hidseq") #include mx vars
+
+# #covariates <- c("hhsize","hhsize_sq","age_avg","avg_age_sq","share_dep","share_kids","sh_in_school",
+#                 "sh_mem_male","buddhist_hhh","married_hhh","sinhala_hhh","female_hhh","age_hhh", 
+#                 "edu_hhh_none", "hh_main_agri","hh_main_ind","have_public_emp","sh_wages",
+#                 "has_conc_disab","has_comms_disab","hear_disab_hhh","sh_ecactive",
+#                 "ln_rpcinc1","hidseq")
 covariates <- unique(covariates)
+list(covariates)
 
 data.rec$fic_dep_var=1
 # Create the formula 
@@ -75,6 +81,7 @@ formula.mod.b <- as.formula(paste("fic_dep_var ~",
   X.samp.a =build.x(formula = formula.mod.a, 
                     data.don,
                     contrasts = FALSE)
+  
   #Simulation loop
   set.seed(seed)
   foreach (j=1:sim) %do% { #replace to dopar later
@@ -90,38 +97,39 @@ formula.mod.b <- as.formula(paste("fic_dep_var ~",
     if (min(table(train.a$district,train.a$urban))>0){
       group.v <- c("district","urban")  # donation classes
     }  else {
-      group.v <- c("district","urban")  # donation classes
+      group.v <- c("district")  # donation classes
     }
     #subset to model covariates
-    train.a = train.a[,unique(c("welfare",hh_vars, sh_vars,hhh_vars,age_vars,
-                                edu_vars,econ_vars, disab_vars, inc_vars ,oth_vars))] 
+    train.a = train.a[,unique(c("welfare",covariates))] 
     #remove NAs for training
     train.a=na.omit(train.a)
     #Design matrix for training model
     mod.a=lm(welfare~.,data=train.a)
     X.a = model.matrix(mod.a)
+    sd_cols <- apply(X.a, 2, function(z) sd(as.numeric(z), na.rm = TRUE))
+    X.a     <- X.a[, is.finite(sd_cols) & sd_cols > 0, drop = FALSE]
     y.a = as.matrix(train.a$welfare)
     y.a= log(y.a+1)
   
-   #  #Estimation
-   # #AdapLASSO
-   #  cv.ridge1 = cv.glmnet(X.a, y=y.a,alpha=0)
-   #  ridge_coefs1 <- coef(cv.ridge1, s = "lambda.min")
-   #  # Compute adaptive weights (inverse of absolute Ridge coefficients)
-   #  # We exclude the intercept (ridge_coefs[1])
-   #  # Adding small value to avoid division by zero
-   #  adapt_wgts1 <- 1 / (abs(ridge_coefs1[-1]) + 1e-6)
-   #  #Fit Lasso through CV using adaptive weights
-   #  cv.lasso1 = cv.glmnet(X.a, y=y.a,
-   #                        penalty.factor = adapt_wgts1)
-   #  best.lambda1 = cv.lasso1$lambda.min
-   #  lasso_best1 <- glmnet(X.a, y=y.a, alpha = 1, 
-   #                        lambda = best.lambda1, 
-   #                        penalty.factor = adapt_wgts1)
-   # 
+    #Estimation
+    #AdapLASSO
+     cv.ridge1 = cv.glmnet(X.a, y=y.a,alpha=0)
+     ridge_coefs1 <- coef(cv.ridge1, s = "lambda.min")
+   # Compute adaptive weights (inverse of absolute Ridge coefficients)
+   # We exclude the intercept (ridge_coefs[1])
+   # Adding small value to avoid division by zero
+     adapt_wgts1 <- 1 / (abs(ridge_coefs1[-1]) + 1e-6)
+   #Fit Lasso through CV using adaptive weights
+     cv.lasso1 = cv.glmnet(X.a, y=y.a,
+                           penalty.factor = adapt_wgts1)
+     best.lambda1 = cv.lasso1$lambda.min
+     lasso_best1 <- glmnet(X.a, y=y.a, alpha = 1,
+                           lambda = best.lambda1,
+                           penalty.factor = adapt_wgts1)
+
    #  #Predict log consumption using Adaplasso
-   #  Ya.al<-predict(lasso_best1, newx=X.a, s=best.lambda1)
-   #  r2_al <- compute_r_squared(y.a, Ya.al)
+     Ya.al<-predict(lasso_best1, newx=X.a, s=best.lambda1)
+     r2_al <- compute_r_squared(y.a, Ya.al)
 
     #LASSO
     cv.lasso2 = cv.glmnet(X.a, y=y.a, alpha=1)
@@ -131,6 +139,7 @@ formula.mod.b <- as.formula(paste("fic_dep_var ~",
     #Predict log consumption using lasso
     Ya.l<-predict(lasso_best2, newx=X.a, s=best.lambda2)
     r2_l <- compute_r_squared(y.a, Ya.l)
+    #Keep only regular Lasso for computational ease
     r2[j]=max(r2_al,r2_l)
     md[j]=ifelse(r2_l<=r2_al,"AdapLasso","Lasso")
     

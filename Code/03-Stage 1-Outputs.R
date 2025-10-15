@@ -1,13 +1,13 @@
-#Graphs and tables
-
-#Bring States names
-states=read_excel(paste0(datapath,
-            "cleaned/Stage 1/Cleaned/2022 matching/states.xlsx"))
-
-data.rec2=merge(data.rec2,states,by.x="statenum",by.y="state",all.x=TRUE)
-data.don=merge(data.don,states,by.x="statenum",by.y="state",all.x=TRUE)
-#######
-#######
+# #Graphs and tables
+# 
+# #Bring States names
+# states=read_excel(paste0(datapath,
+#             "cleaned/Stage 1/Cleaned/2022 matching/states.xlsx"))
+# 
+# data.rec2=merge(data.rec2,states,by.x="statenum",by.y="state",all.x=TRUE)
+# data.don=merge(data.don,states,by.x="statenum",by.y="state",all.x=TRUE)
+# #######
+# #######
 
 #Poverty calculations
 
@@ -104,7 +104,7 @@ gin1= gini.wtd(df[df$survey=="HIES",]$welfare,
 
 gin2 = gini.wtd(df[df$survey=="LFS",]$welfare,
          df[df$survey=="LFS",]$popwt)
-tab = data.frame(survey=c("HIES,LFS"),gini=c(gin1,gin2))
+tab = data.frame(survey=c("HIES","LFS"),gini=c(gin1,gin2))
 write.csv(tab,paste(path,
    "/Outputs/Main/Tables/table 2 gini.csv",sep=""))
 

@@ -86,7 +86,7 @@ closest_index_match <- list()
 closest_index_pred <- list()
 
 # Find the closest simulated distribution for each state-sector
-for (key in names(original_data)) {
+for (key in unique(data.don$district)) {
   cat("State_Sector", key, "\n", sep=" ")
   
   wasserstein_distances_match <- compute_wasserstein_distance(original_data[[key]], 
