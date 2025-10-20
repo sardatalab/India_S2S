@@ -70,3 +70,7 @@ missing_report.don <- data.don %>%
                  names_to = "Variable", values_to = "PercentMissing")
 subset(missing_report.don,PercentMissing>0)
 
+
+### Load Excel file with states names
+states=read_excel(paste0(datapath,
+                         "/Data/Stage 1/Cleaned/states.xlsx"))

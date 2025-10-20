@@ -15,16 +15,25 @@ packages <- c(
   "StatMatch", "survey", "questionr", "reldist", "glmnet", "useful",
   "data.table", "haven", "statar", "parallel", "foreach", "doParallel",
   "dplyr", "tidyr", "dineq", "convey", "renv", "transport", "ggridges",
-  "ggplot2","forcats","scales","readxl"
+  "ggplot2","forcats","scales","readxl","Hmisc","viridis"
 )
 
-# Install missing packages
-installed <- installed.packages()
-for (pkg in packages) {
-  if (!(pkg %in% rownames(installed))) {
-    install.packages(pkg, dependencies = TRUE)
-  }
+# CRAN mirror (optional but recommended)
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+
+# Function to check for installed packages
+is_installed <- function(pkg) {
+  suppressWarnings(requireNamespace(pkg, quietly = TRUE))
 }
+
+missing_pkgs <- packages[!vapply(packages, is_installed, logical(1))]
+
+if (length(missing_pkgs)) {
+  install.packages(missing_pkgs)
+} else {
+  message("All packages already installed.")
+}
+
 
 #renv::restore()
 
@@ -38,7 +47,7 @@ datapath <- "C:/Users/wb553773/WBG/Nishtha Kochhar - INDDATA/S2S imputations_CES
 # Set global parameters
 
 # Number of simulations stage 1
-nsim1=1000
+nsim1=10
 
 # Number of simulations stage 2
 nsim2=100

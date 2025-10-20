@@ -1,4 +1,5 @@
-# Uses Wasserstein distance to find the simulation that more closer
+# Uses Wasserstein distance to find the simulation that more closely resembles
+# the original distribution
 
 #####Define custom functions####
 compute_wasserstein_distance <- function(original, predicted_matrix) {
@@ -123,8 +124,6 @@ closest_index_pred <- unlist(closest_index_pred)
 # Print preview
 head(final_match_df)
 head(final_pred_df)
-
-
 
 
 #Keep prediction-based imputation
