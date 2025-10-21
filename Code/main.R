@@ -50,7 +50,7 @@ datapath <- "C:/Users/wb553773/WBG/Nishtha Kochhar - INDDATA/S2S imputations_CES
 nsim1=10
 
 # Number of simulations stage 2
-nsim2=100
+nsim2=10
 
 # Resampling parameter stages 1 and 2
 n.a = .8
@@ -81,6 +81,7 @@ umic=8.3
 source(file.path(path, "Code/00-Stage 1-Clean.R"))
 source(file.path(path, "Code/01-Stage 1-Simulation.R"))
 source(file.path(path, "Code/02-Stage 1-Ensemble.R"))
-source(file.path(path, "Code/03-Stage 1-Outputs.R"))
+source(file.path(path, "Code/03-Stage 1-Outputs.R"),chdir = TRUE, encoding = "UTF-8")
+source(file.path(path, "Code/04-Stage 2-Simulation.R"),chdir = TRUE, encoding = "UTF-8")
 
 

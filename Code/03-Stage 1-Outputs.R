@@ -189,7 +189,7 @@ weighted_means_wide <- weighted_means_long %>%
   arrange(desc(variable))
 
 write.csv(weighted_means_wide,paste(path,
-        "/Outputs/Main/Tables/table A 1.csv",sep=""),
+        "/Outputs/Annex/Tables/table A 1.csv",sep=""),
         row.names = FALSE)
 
 
@@ -417,7 +417,7 @@ tab3_wide_lic$Diff=with(tab3_wide_lic,PLFS-HCES)
 
 #save table
 write.csv(tab3_wide_lic,paste(path,
-       "/Outputs/Main/Tables/state_pov_lic_w.csv",sep=""))
+       "/Outputs/Intermediate/state_pov_lic_w.csv",sep=""))
 
 #ranking plot
 tab3_wide_lic <- tab3_wide_lic %>%
@@ -447,7 +447,7 @@ ggplot(tab3_wide_lic, aes(x = hces_rank, y = plfs_rank)) +
     axis.text = element_text(size = 8)   # Reduce axis text size
   )
 ggsave(paste(path,
-             "/Outputs/Main/Figures/State Ranking lic.png",sep=""),
+             "/Outputs/Intermediate/State Ranking lic.png",sep=""),
        width = 20, height = 20, units = "cm")
 
 # LMIC
@@ -463,7 +463,7 @@ tab3_wide_lmic$PLFS=100*tab3_wide_lmic$PLFS
 tab3_wide_lmic$Diff=with(tab3_wide_lmic,PLFS-HCES)
 
 write.csv(tab3_wide_lmic,paste(path,
-                "/Outputs/Main/Tables/state_pov_lmic_w.csv",sep=""))
+                "/Outputs/Intermediate/state_pov_lmic_w.csv",sep=""))
 #ranking plot
 tab3_wide_lmic <- tab3_wide_lmic %>%
   mutate(
@@ -508,7 +508,7 @@ ggplot(tab3, aes(y = as.factor(state_name), x = statistic.povlic, fill = survey)
   xlim(c(0,40))+
 theme_minimal()
 ggsave(paste(path,
-             "/Outputs/Main/Figures/Poverty State lic.png",sep=""),
+             "/Outputs/Intermediate/Poverty State lic.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 # LMIC
@@ -606,7 +606,7 @@ ggplot(heatmap_data, aes(x = decile_mmrp, y = decile_abbr, fill = rel_freq)) +
   ) +
   theme_minimal()
 ggsave(paste(path,
-        "/Outputs/Main/Figures/Figure B4.png",sep=""),
+        "/Outputs/Annex/Figures/Figure B4.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 
