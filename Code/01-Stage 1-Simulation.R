@@ -40,7 +40,7 @@ econ_vars = c("hh_main_agri","hh_main_ind","hh_main_serv","have_agri_emp","have_
               "have_ind_emp","have_public_emp","have_semiskilled_worker", "sh_selfempl","public_emp_hhh")
 disab_vars = c("has_conc_disab","has_comms_disab","eye_disab_hhh","hear_disab_hhh") #larger differences so dropping for now- can use in step 2
 inc_vars    = c("ln_rpcinc1", "sh_wages","sh_selfemp")
-oth_vars    = c("urban","province")
+oth_vars    = c("urban","district")
 
 #Combine the covariate names
 #covariates <- names(data.rec) #to include all available variables in receiver data set

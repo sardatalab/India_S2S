@@ -192,23 +192,23 @@ tab3_wide_30 <- tab3 %>%
   select(survey,district,statistic.pov30) %>%
   pivot_wider(names_from = survey, values_from =statistic.pov30)
 
-tab3_wide_30$HCES=100*tab3_wide_30$HCES
-tab3_wide_30$PLFS=100*tab3_wide_30$PLFS
-tab3_wide_30$Diff=with(tab3_wide_30,PLFS-HCES)
+tab3_wide_30$HIES=100*tab3_wide_30$HIES
+tab3_wide_30$LFS=100*tab3_wide_30$LFS
+tab3_wide_30$Diff=with(tab3_wide_30,LFS-HIES)
 #write.csv(tab3_wide_30,paste(path,
 #                              "/Results/2022 matching/state_pov_30_w.csv",sep=""))
 
 #ranking plot
 tab3_wide_30 <- tab3_wide_30 %>%
   mutate(
-    hces_rank = rank(-HCES, ties.method = "first"),
-    plfs_rank = rank(-PLFS, ties.method = "first")
+    hies_rank = rank(-HIES, ties.method = "first"),
+    lfs_rank = rank(-LFS, ties.method = "first")
   )
 
 #rank correlation
-cat("Rank correlation is: ",cor(tab3_wide_30$hces_rank,tab3_wide_30$plfs_rank))
+cat("Rank correlation is: ",cor(tab3_wide_30$hies_rank,tab3_wide_30$lfs_rank))
 
-ggplot(tab3_wide_30, aes(x = hces_rank, y = plfs_rank)) +
+ggplot(tab3_wide_30, aes(x = hies_rank, y = lfs_rank)) +
   geom_point(size = 3) +
   geom_text(aes(label = district), vjust = -0.5, check_overlap = TRUE) +
   scale_x_continuous(breaks = 1:nrow(tab3_wide_30)) +
@@ -217,8 +217,8 @@ ggplot(tab3_wide_30, aes(x = hces_rank, y = plfs_rank)) +
               linetype = "dashed", color = "gray") +
   coord_fixed() +
   labs(
-    x = "HCES Ranking (1 = Highest Poverty Rate)",
-    y = "PLFS Ranking (1 = Highest Poverty Rate)",
+    x = "HIES Ranking (1 = Highest Poverty Rate)",
+    y = "LFS Ranking (1 = Highest Poverty Rate)",
     title = "State Poverty Rankings ($3.0 PPP21)"
   ) +
   theme_minimal() +
@@ -234,23 +234,23 @@ tab3_wide_42 <- tab3 %>%
   select(survey,district,statistic.pov42) %>%
   pivot_wider(names_from = survey, values_from =statistic.pov42)
 
-tab3_wide_42$HCES=100*tab3_wide_42$HCES
-tab3_wide_42$PLFS=100*tab3_wide_42$PLFS
-tab3_wide_42$Diff=with(tab3_wide_42,PLFS-HCES)
+tab3_wide_42$HIES=100*tab3_wide_42$HIES
+tab3_wide_42$LFS=100*tab3_wide_42$LFS
+tab3_wide_42$Diff=with(tab3_wide_42,LFS-HIES)
 
 #write.csv(tab3_wide_42,paste(path,
 #                             "/Results/2022 matching/state_pov_42_w.csv",sep=""))
 #ranking plot
 tab3_wide_42 <- tab3_wide_42 %>%
   mutate(
-    hces_rank = rank(-HCES, ties.method = "first"),
-    plfs_rank = rank(-PLFS, ties.method = "first")
+    hies_rank = rank(-HIES, ties.method = "first"),
+    lfs_rank = rank(-LFS, ties.method = "first")
   )
 
 #rank correlation
-cat("Rank correlation is: ",cor(tab3_wide_42$hces_rank,tab3_wide_42$plfs_rank))
+cat("Rank correlation is: ",cor(tab3_wide_42$hies_rank,tab3_wide_42$lfs_rank))
 
-ggplot(tab3_wide_42, aes(x = hces_rank, y = plfs_rank)) +
+ggplot(tab3_wide_42, aes(x = hies_rank, y = lfs_rank)) +
   geom_point(size = 3) +
   geom_text(aes(label = district), vjust = -0.5, check_overlap = TRUE) +
   scale_x_continuous(breaks = 1:nrow(tab3_wide_42)) +
@@ -259,8 +259,8 @@ ggplot(tab3_wide_42, aes(x = hces_rank, y = plfs_rank)) +
               linetype = "dashed", color = "gray") +
   coord_fixed() +
   labs(
-    x = "HCES Ranking (1 = Highest Poverty Rate)",
-    y = "PLFS Ranking (1 = Highest Poverty Rate)",
+    x = "HIES Ranking (1 = Highest Poverty Rate)",
+    y = "LFS Ranking (1 = Highest Poverty Rate)",
     title = "State Poverty Rankings ($4.2 PPP21)"
   ) +
   theme_minimal() +
@@ -277,19 +277,19 @@ ggsave(paste(path,
 #   select(survey,state,statistic.pov83) %>%
 #   pivot_wider(names_from = survey, values_from =statistic.pov83)
 # 
-# tab3_wide_83$HCES=100*tab3_wide_83$HCES
-# tab3_wide_83$PLFS=100*tab3_wide_83$PLFS
-# tab3_wide_83$Diff=with(tab3_wide_83,PLFS-HCES)
+# tab3_wide_83$hies=100*tab3_wide_83$hies
+# tab3_wide_83$lfs=100*tab3_wide_83$lfs
+# tab3_wide_83$Diff=with(tab3_wide_83,lfs-hies)
 # 
 # write.csv(tab3_wide_83,paste(path,
 #                              "/Results/2022 matching/state_pov_83_w.csv",sep=""))
 # #ranking plot
 # tab3_wide_83 <- tab3_wide_83 %>%
 #   mutate(
-#     hces_rank = rank(-HCES, ties.method = "first"),
-#     plfs_rank = rank(-PLFS, ties.method = "first")
+#     hies_rank = rank(-hies, ties.method = "first"),
+#     lfs_rank = rank(-lfs, ties.method = "first")
 #   )
-# ggplot(tab3_wide_83, aes(x = hces_rank, y = plfs_rank)) +
+# ggplot(tab3_wide_83, aes(x = hies_rank, y = lfs_rank)) +
 #   geom_point(size = 3) +
 #   geom_text(aes(label = state), vjust = -0.5, check_overlap = TRUE) +
 #   scale_x_continuous(breaks = 1:nrow(tab3_wide_83)) +
@@ -298,8 +298,8 @@ ggsave(paste(path,
 #               linetype = "dashed", color = "gray") +
 #   coord_fixed() +
 #   labs(
-#     x = "HCES Ranking (1 = Highest Poverty Rate)",
-#     y = "PLFS Ranking (1 = Highest Poverty Rate)",
+#     x = "hies Ranking (1 = Highest Poverty Rate)",
+#     y = "lfs Ranking (1 = Highest Poverty Rate)",
 #     title = "State Poverty Rankings ($8.3 PPP21)"
 #   ) +
 #   theme_minimal() +
@@ -362,58 +362,57 @@ ggsave(paste(path,
 
 ####################
 #Density plot of ratio 
-#plfs.don is the harmonized PLFS 2022 with all common variables between the
-#different rounds of the PLFS
-plfs.don=read_dta(paste(path,
-               "/Data/PLFS/IND_2022_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",sep=""))
-#We bring the dataset containing the imputed consumption
-plfs.imp=read_dta(paste(path,
-               "/Results/2022 matching/Imputed_PLFS_22_match_1000_v9.dta",sep=""))
-plfs.imp=subset(plfs.imp,select=c(hhid,welfare))
-plfs.don=merge(plfs.don,plfs.imp,by="hhid",all.x=TRUE)
-rm(plfs.imp)
-plfs.don=subset(plfs.don,!is.na(welfare))
+#lfs.don is the harmonized lfs 2019 with all common variables between the
+#different rounds of the lfs
+lfs.don=data.rec2
+rm(data.rec2)
 #The ratio is calculated by dividing the imputed consumption by the
 #previously deflated and temporaly adjusted 
-#abbreviated consumption available in the PLFS.
-plfs.don$ratio = with(plfs.don,
-                      welfare/consumption_pc_adj)
+#abbreviated consumption available in the lfs.
+
+lfs.don$ratio=with(lfs.don,welfare/rpcinc1)
+summary(lfs.don$ratio)
+summary(lfs.don[exp(lfs.don$ln_rpcinc1)>1,]$ratio) 
+summary(lfs.don[exp(lfs.don$ln_rpcinc1)>2000,]$ratio) 
+
+nrow(lfs.don[exp(lfs.don$ln_rpcinc1)<1500,])
+
 #Ratio Density
-plfs.don$quintile=xtile(plfs.don$welfare,n=5,wt=plfs.don$weight)
-plfs.don$quintile=as.factor(plfs.don$quintile)
+lfs.don$quintile=xtile(lfs.don$welfare,n=5,wt=lfs.don$weight)
+lfs.don$quintile=as.factor(lfs.don$quintile)
 
 #Ridge plot
-ggplot(plfs.don, aes(x = ratio, y = fct_rev(quintile), 
+ggplot(lfs.don, aes(x = ratio, y = fct_rev(quintile), 
                      weight = weight, fill = quintile)) +
   geom_density_ridges(alpha = 0.5, scale = 1.5, rel_min_height = 0.01) +
   labs(x = "Ratio",
        y = "Quintile",
-       title = "Ridgeline Plot of MMRP to Abbreviate Consumption (2022-23)") +
+       title = "Ridgeline Plot of Household Expenditure to Labor Income (2019)") +
   xlim(c(0, 7.5)) +
   theme_ridges() + 
   theme(legend.position = "none") 
 ggsave(paste(path,
-             "/Results/PLFS matching/Ridgeplot of ratio by quintile.png",sep=""),
+             "/Results/2022 matching/Ridgeplot of ratio by quintile.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 
 
 #HEATMAP OF DECILES
 
-plfs.don$decile_mmrp=xtile(plfs.don$welfare,n=10,wt=plfs.don$weight)
-plfs.don$decile_abbr=xtile(plfs.don$consumption_pc_adj,n=10,wt=plfs.don$weight)
+lfs.don$decile_welfare=xtile(lfs.don$welfare,n=10,wt=lfs.don$weight)
+lfs.don$decile_rpcinc=xtile(lfs.don$rpcinc1,n=10,wt=lfs.don$weight)
 
-des <- svydesign(ids = ~1, weights = ~weight, data = plfs.don)
+des <- svydesign(ids = ~1, weights = ~weight, data = lfs.don)
 
 #Cross-tabulate weighted counts
-tab <- svytable(~decile_mmrp + decile_abbr, design = des)
+tab <- svytable(~decile_welfare + decile_rpcinc, design = des)
 heatmap_data <- as.data.frame(tab)
 
 heatmap_data <- heatmap_data %>%
   mutate(rel_freq = Freq / sum(Freq))
 
 #Plot heatmap
-ggplot(heatmap_data, aes(x = decile_mmrp, y = decile_abbr, fill = rel_freq)) +
+ggplot(heatmap_data, aes(x = decile_welfare, y = decile_rpcinc, fill = rel_freq)) +
   geom_tile(color = "white") +
   #geom_text(aes(label = percent(rel_freq, accuracy = .1)), color = "white", size = 3) +
   scale_fill_viridis_c(
@@ -423,12 +422,12 @@ ggplot(heatmap_data, aes(x = decile_mmrp, y = decile_abbr, fill = rel_freq)) +
   labs(
     title = "Cross-Decile Heatmap",
     x = "Deciles of imputed consumption",
-    y = "Deciles of abbreviated consumption",
+    y = "Deciles of labor income",
     fill = "Proportion of population"
   ) +
   theme_minimal()
 ggsave(paste(path,
-             "/Results/Paper/Replies to reviewers/Heatmap deciles.png",sep=""),
+             "/Results/2022 matching/Heatmap deciles.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 
