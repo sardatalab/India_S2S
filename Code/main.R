@@ -15,7 +15,8 @@ packages <- c(
   "StatMatch", "survey", "questionr", "reldist", "glmnet", "useful",
   "data.table", "haven", "statar", "parallel", "foreach", "doParallel",
   "dplyr", "tidyr", "dineq", "convey", "renv", "transport", "ggridges",
-  "ggplot2","forcats","scales","readxl","Hmisc","viridis"
+  "ggplot2","forcats","scales","readxl","Hmisc","viridis","ggh4x","patchwork",
+  "GGally"
 )
 
 # CRAN mirror (optional but recommended)
@@ -63,8 +64,14 @@ X.mtc1=c("ymatch","hh_size","hh_head_age") # nearest neighbor search variables
 don.vars1=c("mpce_sp_def_ind") #variables to be imputed
 
 # Matching parameters stage 2
-X.mtc2=c("ymatch","hh_size","hh_head_age") # nearest neighbor search variables
-don.vars2=c("mpce_sp_def_ind") #variables to be imputed
+X.mtc2=c("ymatch","hh_size","hhb_year") # nearest neighbor search variables
+don.vars2=c("ratio") #variables to be imputed
+
+# Statistic to be used to ensemble simulations in stage 2
+use_stat="median" #alternatively: mean, median geometric_mean
+
+# Type of model: "match" is PMM-style and "pred" is MI-style
+use_mod="match"  
 
 # Parameters to convert vectors in 2022 prices to 2021 PPP
 cpi21=1.101906
@@ -78,10 +85,11 @@ umic=8.3
 # Run the R scripts
 
 #Stage 1
-source(file.path(path, "Code/00-Stage 1-Clean.R"))
-source(file.path(path, "Code/01-Stage 1-Simulation.R"))
-source(file.path(path, "Code/02-Stage 1-Ensemble.R"))
+source(file.path(path, "Code/00-Stage 1-Clean.R"),chdir = TRUE, encoding = "UTF-8")
+source(file.path(path, "Code/01-Stage 1-Simulation.R"),chdir = TRUE, encoding = "UTF-8")
+source(file.path(path, "Code/02-Stage 1-Ensemble.R"),chdir = TRUE, encoding = "UTF-8")
 source(file.path(path, "Code/03-Stage 1-Outputs.R"),chdir = TRUE, encoding = "UTF-8")
 source(file.path(path, "Code/04-Stage 2-Simulation.R"),chdir = TRUE, encoding = "UTF-8")
-
+source(file.path(path, "Code/05-Stage 2-Ensemble.R"),chdir = TRUE, encoding = "UTF-8")
+source(file.path(path, "Code/06-Stage 2-Outputs.R"),chdir = TRUE, encoding = "UTF-8")
 

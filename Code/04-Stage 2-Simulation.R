@@ -2,6 +2,8 @@
 #number of simulations
 sim=nsim2
 
+#Additional data cleaning & construction
+
 #create sequential Ids
 plfs.don$hidseq=seq(1:nrow(plfs.don))
 #Create quintiles of abbreviated consumption
@@ -40,10 +42,6 @@ missing_report.don <- plfs.don %>%
 subset(missing_report.don,PercentMissing>0)
 
 set.seed(seed)
-
-#Current date
-date_mod=Sys.Date()
-
 
 #############
 #YEAR = 2017#
@@ -142,11 +140,10 @@ foreach (a = c(0,1)) %do% {  # 0: HHs with income information, 1 otherwise
   #Combine the covariate names
   if(a == 0) {
     covariates <- c(hh_vars, inc_vars, oth_vars)
-    X.mtc=c("ymatch","hh_size",
-            "hhb_year") # NN search variables
+    X.mtc=X.mtc2 # NN search variables
   } else {
     covariates <- c(hh_vars, oth_vars)
-    X.mtc=c("ymatch","hh_size","hhb_year") # NN search variables
+    X.mtc=X.mtc2 # NN search variables
   }
   
   # Create the formula 
@@ -157,9 +154,6 @@ foreach (a = c(0,1)) %do% {  # 0: HHs with income information, 1 otherwise
   formula.mod.b <- as.formula(paste(paste("consumption_pc ~", 
                                           paste(covariates, collapse = " + ")),"+hidseq",sep=""))
   
-  #prepare global matching parameters
-  don.vars=don.vars2 #variables to be imputed
-
   #empty objects to save results
   #matching
   simcons=subset(data.rec,sel=c(hhid))
@@ -289,14 +283,14 @@ foreach (a = c(0,1)) %do% {  # 0: HHs with income information, 1 otherwise
     
     #Matching using lasso predictions and random nearest neighbor distance hot deck (D'Orazio, 2017)
     rnd.2 <- RANDwNND.hotdeck(data.rec=samp.btemp, data.don=samp.atemp,
-                              match.vars=X.mtc, don.class=group.v,
+                              match.vars=X.mtc2, don.class=group.v,
                               dist.fun="Euclidean",
                               cut.don="min")
     
     #Create fused dataset
     fA.wrnd <- create.fused(data.rec=samp.btemp, data.don=samp.atemp,
                             mtc.ids=rnd.2$mtc.ids,
-                            z.vars=don.vars) 
+                            z.vars=don.vars2) 
     fA.wrnd$mpce_sp_def_ind = with(fA.wrnd,
                                    ratio*consumption_pc_adj)
     fA.wrnd = fA.wrnd[,c("hhid","mpce_sp_def_ind")]
@@ -320,11 +314,11 @@ df.pred <- do.call(rbind, df.sim.pred)
 #save simulations results
 #R-squared
 write.csv(r2.tot,file=paste(path,
-                  "/Outputs/Intermediate/Models/Simulations_R2.csv",sep=""),
+            "/Outputs/Intermediate/Models/Simulations_R2.csv",sep=""),
           row.names = FALSE)
 #Model used
 write.csv(md.tot,file=paste(path,
-                      "/Outputs/Intermediate/Models/Simulations_model_used.csv",sep=""),
+              "/Outputs/Intermediate/Models/Simulations_model_used.csv",sep=""),
           row.names = FALSE)
 
 #Ensemble coefficients
@@ -340,17 +334,17 @@ write.csv(df.match,file=paste(datapath,
                 ".csv",sep=""),
           row.names = FALSE)
 saveRDS(df.match,file=paste(datapath,
-                            "/Data/Stage 2/Final/Simulations_model_match_",
+                   "/Data/Stage 2/Final/Simulations_model_match_",
                             year,".rds",sep=""))
 
 write.csv(df.pred,file=paste(datapath,
-                             "/Data/Stage 2/Final/Simulations_model_pred_",year,
+                   "/Data/Stage 2/Final/Simulations_model_pred_",year,
                       ".csv",sep=""),
           row.names = FALSE)
 saveRDS(df.pred,file=paste(datapath,
-                           "/Data/Stage 2/Final/Simulations_model_pred_",year,
+              "/Data/Stage 2/Final/Simulations_model_pred_",year,
                     ".rds",sep=""))
-rm(year,df.match,df.pred)
+rm(year,df.match,df.pred,plfs.rec)
 ########################
 #OTHER YEARS AFTER 2017#
 ########################
@@ -366,12 +360,13 @@ foreach (year = years,
                        "glmnet", "useful", "data.table", "haven", 
                        "statar", "dplyr", "tidyr", "dineq", "convey",
                        "parallel","foreach"),
-         .export   = c("plfs.don","path","sim","date_mod",
+         .export   = c("plfs.don","path","sim",
                        "compute_r_squared")) %dopar% {
 
 #####Prepare receiver survey##### 
-plfs.rec=read_dta(paste(path,
-   "/Data/PLFS/IND_",year,"_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",sep="")) 
+plfs.rec=read_dta(paste(datapath,
+     "/Data/Stage 2/Cleaned/IND_",year,"_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",
+     sep="")) 
 #create sequential IDs
 plfs.rec$hidseq=seq(1:nrow(plfs.rec))
 plfs.rec=subset(plfs.rec,!is.na(consumption_pc_adj))
@@ -456,11 +451,10 @@ inc_vars = c("shr_regwages","shr_caswages","shr_selfinc",
       #Combine the covariate names
       if(a == 0) {
         covariates <- c(hh_vars, inc_vars, oth_vars)
-        X.mtc=c("ymatch","hh_size",
-                "hhb_year") # NN search variables
+        X.mtc=X.mtc2 # NN search variables
       } else {
         covariates <- c(hh_vars, oth_vars)
-        X.mtc=c("ymatch","hh_size","hhb_year") # NN search variables
+        X.mtc=X.mtc2 # NN search variables
       }
       
       # Create the formula 
@@ -471,11 +465,7 @@ inc_vars = c("shr_regwages","shr_caswages","shr_selfinc",
       formula.mod.b <- as.formula(paste(paste("consumption_pc ~", 
                       paste(covariates, collapse = " + ")),"+hidseq",sep=""))
       
-      #prepare global matching parameters
-      don.vars=c("ratio") #variables to be imputed
-      
-      # resampling parameter 80%
-      #n.a = .8
+
       #empty objects to save results
       #matching
       simcons=subset(data.rec,sel=c(hhid))
@@ -564,14 +554,14 @@ inc_vars = c("shr_regwages","shr_caswages","shr_selfinc",
         
         #Matching using lasso predictions and random nearest neighbor distance hot deck (D'Orazio, 2017)
         rnd.2 <- RANDwNND.hotdeck(data.rec=samp.btemp, data.don=samp.atemp,
-                                  match.vars=X.mtc, don.class=group.v,
+                                  match.vars=X.mtc2, don.class=group.v,
                                   dist.fun="Euclidean",
                                   cut.don="min")
         
         #Create fused dataset 
         fA.wrnd <- create.fused(data.rec=samp.btemp, data.don=samp.atemp,
                                 mtc.ids=rnd.2$mtc.ids,
-                                z.vars=don.vars) 
+                                z.vars=don.vars2) 
         fA.wrnd$mpce_sp_def_ind = with(fA.wrnd,
                                        ratio*consumption_pc_adj)
         fA.wrnd = fA.wrnd[,c("hhid","mpce_sp_def_ind")]
@@ -589,20 +579,21 @@ inc_vars = c("shr_regwages","shr_caswages","shr_selfinc",
     #save simulations results
 
     write.csv(df.match,file=paste(datapath,
-                                  "/Data/Stage 2/Final/Simulations_model_match_",
+                       "/Data/Stage 2/Final/Simulations_model_match_",
                                   year,".csv",sep=""),
               row.names = FALSE)
     saveRDS(df.match,file=paste(datapath,
-                                "/Data/Stage 2/Final/Simulations_model_match_",
+                      "/Data/Stage 2/Final/Simulations_model_match_",
                                 year,".rds",sep=""))
     
     write.csv(df.pred,file=paste(datapath,
-                                 "/Data/Stage 2/Final/Simulations_model_pred_",
+                    "/Data/Stage 2/Final/Simulations_model_pred_",
                                  year,".csv",sep=""),
               row.names = FALSE)
     saveRDS(df.pred,file=paste(datapath,
-                               "/Data/Stage 2/Final/Simulations_model_pred_",
+                    "/Data/Stage 2/Final/Simulations_model_pred_",
                                year,".rds",sep=""))
     
 } #end year loop
 stopCluster(cl)
+rm(years,df.match,df.pred,plfs.rec)

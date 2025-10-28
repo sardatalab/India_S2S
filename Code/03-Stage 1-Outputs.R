@@ -175,6 +175,8 @@ ggsave(paste(path,
              "/Outputs/Main/Figures/Figure 6.png",sep=""),
        width = 25, height = 15, units = "cm")
 
+rm(combined_data,data2017,data2018,data2019,
+   data2020,data2021,data2022)
 
 ####Table A 1####
 
@@ -492,7 +494,7 @@ ggplot(tab3_wide_lmic, aes(x = hces_rank, y = plfs_rank)) +
     axis.text = element_text(size = .5)   # Reduce axis text size
   )
 ggsave(paste(path,
-             "/Outputs/Main/Figures/Figure B1 panel B.png",sep=""),
+             "/Outputs/Annex/Figures/Figure B1 panel B.png",sep=""),
        width = 20, height = 20, units = "cm")
 
 #Barplots
@@ -528,7 +530,7 @@ ggplot(tab3, aes(
   xlim(c(0,75))+
   theme_minimal()
 ggsave(paste(path,
-             "/Outputs/Main/Figures/Figure B1 panel A.png",sep=""),
+             "/Outputs/Annex/Figures/Figure B1 panel A.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 
