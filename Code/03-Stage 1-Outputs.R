@@ -9,7 +9,17 @@
 # #######
 # #######
 
-#Poverty calculations
+#Load vector: 
+data.rec2 <- read_dta(paste(datapath,
+                      "cleaned/Stage 1/Final/Imputed_PLFS_22_match.dta",
+                      sep="")) 
+data.don=read_dta(paste(datapath,"cleaned/hies2019_clean.dta",sep="")) 
+#create sequential Ids
+data.don$hidseq=seq(1:nrow(data.don))
+data.don <- data.don %>% 
+    filter(!is.na(welfare))
+#hh age squared
+data.don$hh_head_age_sq = with(data.don,age_hhh^2)
 
 # 2. Subset and add survey identifier
 lfs <- data.rec2 %>%
@@ -43,6 +53,7 @@ df=na.omit(df)
 df$pov30 = ifelse(df$welfare*(12/365)/cpi21/icp21<3,1,0)
 df$pov42 = ifelse(df$welfare*(12/365)/cpi21/icp21<4.2,1,0)
 df$pov83 = ifelse(df$welfare*(12/365)/cpi21/icp21<8.3,1,0)
+df$povnpl = ifelse(df$welfare<6966,1,0)
 
 #Set as survey
 svydf <- svydesign(ids = ~1, data = df, 
@@ -110,14 +121,14 @@ write.csv(tab,paste(path,
 
 
 #Overall Poverty
-tab1=svyby(~pov30+pov42+pov83, ~survey, design=svydf, svymean,
+tab1=svyby(~pov30+pov42+pov83+povnpl, ~survey, design=svydf, svymean,
            na.rm=TRUE,vartype = "ci")
 
 write.csv(tab1,paste(path,
        "/Outputs/Main/Tables/table 2 poverty.csv",sep=""))
 
 #Poverty by area
-tab2=svyby(~pov30+pov42+pov83, ~survey+urban, design=svydf, 
+tab2=svyby(~pov30+pov42+pov83+povnpl, ~survey+urban, design=svydf, 
            svymean,na.rm=TRUE,vartype = "ci")
 tab2$urban=factor(tab2$urban, levels=c(0,1),labels=c("Rural","Urban"))
 tab2 = tab2 %>% rename(Sector=urban)
@@ -362,20 +373,82 @@ ggsave(paste(path,
 
 ####################
 #Density plot of ratio 
+####################
+
 #lfs.don is the harmonized lfs 2019 with all common variables between the
 #different rounds of the lfs
 lfs.don=data.rec2
 rm(data.rec2)
+
 #The ratio is calculated by dividing the imputed consumption by the
 #previously deflated and temporaly adjusted 
-#abbreviated consumption available in the lfs.
-
+#labor income from primary employment available in the lfs.
 lfs.don$ratio=with(lfs.don,welfare/rpcinc1)
-summary(lfs.don$ratio)
-summary(lfs.don[exp(lfs.don$ln_rpcinc1)>1,]$ratio) 
-summary(lfs.don[exp(lfs.don$ln_rpcinc1)>2000,]$ratio) 
 
-nrow(lfs.don[exp(lfs.don$ln_rpcinc1)<1500,])
+#Alternative Ratio defined using total labor income available consistently 
+#across LFS rounds: primary+secondary+bonuses+allowances 
+
+lfs.don$ratio_tot=with(lfs.don,welfare/rpcinc_tot)
+
+df=lfs.don %>%
+    pivot_longer(cols = c("ratio","ratio_tot"), names_to = "group", 
+                 values_to = "value")
+
+ggplot(df, aes(x = value, weight = popwt,
+               fill = group)) +
+    geom_density(alpha = 0.4, adjust=1.5) +
+    labs(x = "Log Consumption",
+         y = "Density",
+         title = "Original and Imputed Log Consumption by Survey (2019)")+
+    xlim(c(0,5))
+df=lfs.don %>%
+    pivot_longer(cols = c("rpcinc_tot","welfare"), names_to = "group", 
+                 values_to = "value")
+
+ggplot(df, aes(x = log(value), weight = popwt,
+               fill = group)) +
+    geom_density(alpha = 0.4, adjust=1.5) +
+    labs(x = "Log Consumption",
+         y = "Density",
+         title = "Original and Imputed Log Consumption by Survey (2019)")
+
+#Summary stats of ratio
+summary(lfs.don$ratio)
+summary(lfs.don[lfs.don$flag6_income==1,]$ratio) 
+
+summary(lfs.don$ratio_tot)
+summary(lfs.don[lfs.don$flag6_income==1,]$ratio_tot) 
+#Winsorize bottom and top 1%
+# quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,probs=c(0.01,0.05,0.1,0.9,0.95,0.99))
+# 
+# lfs.don$ratio=ifelse(lfs.don$ratio>quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.99),
+#                      quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.99),lfs.don$ratio)
+# lfs.don$ratio=ifelse(lfs.don$ratio<quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.01),
+#                      quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.01),lfs.don$ratio)
+# 
+# quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,probs=c(0.01,0.05,0.1,0.9,0.95,0.99))
+# 
+# lfs.don$ratio_tot=ifelse(lfs.don$ratio_tot>quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.99),
+#                      quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.99),lfs.don$ratio_tot)
+# lfs.don$ratio_tot=ifelse(lfs.don$ratio_tot<quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.01),
+#                      quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.01),lfs.don$ratio_tot)
+
+summary(lfs.don[lfs.don$flag6_income==0,]$ratio) 
+summary(lfs.don[lfs.don$flag6_income==0,]$ratio_tot)
+
+df=lfs.don %>%
+    pivot_longer(cols = c("ratio","ratio_tot"), names_to = "group", 
+                 values_to = "value")
+
+ggplot(df, aes(x = value, weight = popwt,
+               fill = group)) +
+    geom_density(alpha = 0.4, adjust=1.5) +
+    labs(x = "Log Consumption",
+         y = "Density",
+         title = "Original and Imputed Log Consumption by Survey (2019)")
+
+summary(lfs.don[lfs.don$flag6_income==1,]$ratio) 
+summary(lfs.don[lfs.don$flag6_income==1,]$ratio_tot) 
 
 #Ratio Density
 lfs.don$quintile=xtile(lfs.don$welfare,n=5,wt=lfs.don$weight)
@@ -395,7 +468,26 @@ ggsave(paste(path,
              "/Results/2022 matching/Ridgeplot of ratio by quintile.png",sep=""),
        width = 30, height = 20, units = "cm")
 
-
+#Ridge plot:ratio_tot
+ggplot(lfs.don, aes(x = ratio_tot, y = fct_rev(quintile), 
+                    weight = weight, fill = quintile)) +
+    geom_density_ridges(alpha = 0.5, scale = 1.5, rel_min_height = 0.01) +
+    labs(x = "ratio_tot",
+         y = "Quintile",
+         title = "Ridgeline Plot of Household Expenditure to Total Labor Income (2019)") +
+    xlim(c(0, 7.5)) +
+    theme_ridges() + 
+    theme(legend.position = "none") 
+ggsave(paste(path,
+             "/Results/2022 matching/Ridgeplot of ratio_tot by quintile.png",sep=""),
+       width = 30, height = 20, units = "cm")
+ggplot(df, aes(x = value, weight = popwt,
+               fill = group)) +
+    geom_density(alpha = 0.4, adjust=1.5) +
+    labs(x = "Log Consumption",
+         y = "Density",
+         title = "Original and Imputed Log Consumption by Survey (2019)")+
+    xlim(c(0,5))
 
 #HEATMAP OF DECILES
 

@@ -1,6 +1,6 @@
-### Evolution of Post-2011 Poverty in India: A Survey-to-Survey Imputation Approach
+### Estimating a poverty trend in Sri Lanka: A Survey-to-Survey Imputation Approach
 ### Reproducibility Package
-### This version: July 29, 2029
+### This version: October 29 2025
 ### Author: Jaime Fernandez Romero (jfernandezromero@worldbank.org)
 
 ### Main R Script
@@ -51,7 +51,7 @@ seed = 1729
 
 # Matching parameters stage 1
 X.mtc1=c("ymatch","hhsize","age_hhh") # nearest neighbor search variables
-don.vars1=c("welfare") #variables to be imputed //update to rcpccons 
+don.vars1=c("welfare") #variables to be imputed 
 
 # Matching parameters stage 2
 X.mtc2=c("ymatch","hhsize","age_hhh") # nearest neighbor search variables
@@ -60,7 +60,23 @@ don.vars2=c("ratio","welfare") #variables to be imputed
 # Parameters to convert vectors in 2019 prices to 2021 PPP
 cpi21=0.88027848 #this is to convert to 2021PPPs
 icp21=58.296108 #set up as in GMD
-
+# R squared
+compute_r_squared <- function(actual, predicted) {
+    ss_total <- sum((actual - mean(actual))^2)  # Total sum of squares
+    ss_residual <- sum((actual - predicted)^2)  # Residual sum of squares
+    r_squared <- 1 - (ss_residual / ss_total)   # Compute R²
+    return(r_squared)
+}
+######
+geometric_mean <- function(x, na.rm = TRUE) {
+    if (na.rm) {
+        x <- x[!is.na(x)]
+    }
+    if(any(x <= 0)) {
+        stop("All values must be positive to compute the geometric mean.")
+    }
+    exp(mean(log(x)))
+}
 # Run the R scripts
 #Stage 1
 source(file.path(path, "India_S2S/Code/00-Stage 1-Clean.R"))
@@ -69,5 +85,6 @@ source(file.path(path, "India_S2S/Code/02-Stage 1-Ensemble.R"))
 source(file.path(path, "India_S2S/Code/03-Stage 1-Outputs.R"))
 
 source(file.path(path, "India_S2S/Code/04-Stage 2-Simulation"))
+source(file.path(path, "India_S2S/Code/04-Stage 2-Simulation2016"))
 
 

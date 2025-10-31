@@ -9,14 +9,15 @@ date_mod=Sys.Date()
 
 
 #############
-#YEAR = 2016#
+#YEAR = 2023#
 #############
-
-year=2016
-#####Prepare receiver survey##### 
+#We train models in 2022 data only in the first year (2019)
+year=2023
+#####Prepare receiver survey##### this needs to be LFS 2023 file - cleaned and harmonized 
 lfs.rec=read_dta(paste(datapath,
-                       "cleaned/lfs2016_clean.dta",
+                       "cleaned/lfs2023_clean.dta",
                        sep="")) 
+
 #create sequential IDs
 lfs.rec$hidseq=seq(1:nrow(lfs.rec))
 
@@ -186,17 +187,17 @@ foreach (a = c(0,1)) %do% {  # 0: HHs with income information, 1 otherwise
             coef_temp = data.frame(as.matrix(coefficients(lasso_best1)))
             Ya=predict(lasso_best1, newx=X.a, s=best.lambda1)
             save(lasso_best1, file=paste(path,
-                                         "/Outputs/Intermediate/Models/2016/Mod_",a,"_",j,sep=""))
+                                         "/Outputs/Intermediate/Models/Mod_",a,"_",j,sep=""))
             save(best.lambda1, file=paste(path,
-                                          "/Outputs/Intermediate/Models/2016/Lambda_",a,"_",j,sep=""))
+                                          "/Outputs/Intermediate/Models/Lambda_",a,"_",j,sep=""))
         } else {
             Yb<-predict(lasso_best2, newx=X.newb, s=best.lambda2)
             coef_temp = data.frame(as.matrix(coefficients(lasso_best2)))
             Ya=predict(lasso_best2, newx=X.a, s=best.lambda2)
             save(lasso_best2, file=paste(path,
-                                         "/Outputs/Intermediate/Models/2016/Mod_",a,"_",j,sep=""))
+                                         "/Outputs/Intermediate/Models/Mod_",a,"_",j,sep=""))
             save(best.lambda2, file=paste(path,
-                                          "/Outputs/Intermediate/Models/2016/Lambda_",a,"_",j,sep=""))
+                                          "/Outputs/Intermediate/Models/Lambda_",a,"_",j,sep=""))
         }
         
         #Best model coefficients  
@@ -265,18 +266,18 @@ df.pred <- do.call(rbind, df.sim.pred)
 #save simulations results
 #R-squared
 write.csv(r2.tot,file=paste(path,
-                            "/Outputs/Intermediate/Models/2016/Simulations_R2.csv",sep=""),
+                            "/Outputs/Intermediate/Models/Simulations_R2.csv",sep=""),
           row.names = FALSE)
 #Model used
 write.csv(md.tot,file=paste(path,
-                            "/Outputs/Intermediate/Models/2016/Simulations_model_used.csv",sep=""),
+                            "/Outputs/Intermediate/Models/Simulations_model_used.csv",sep=""),
           row.names = FALSE)
 
 #Ensemble coefficients
 coef.tot$coef=apply(coef.tot, 1,mean,na.rm=TRUE)
 
 write.csv(coef.tot,file=paste(path,
-                              "/Outputs/Intermediate/Models/2016/Models_coefficients.csv",sep=""),
+                              "/Outputs/Intermediate/Models/Models_coefficients.csv",sep=""),
           row.names = TRUE)
 
 #Simulation results
@@ -311,7 +312,7 @@ df.pred$welfare_median=apply(df.pred[,-1],
 df.pred$welfare_geom=apply(df.pred[,-1],
                            1,geometric_mean,na.rm=TRUE)
 
-df.pred.option2=subset(df.pred,select = c("hhid","welfare_mean"))
+df.pred.option2=subset(df.pred,select = c("hhid","welfare_geom"))
 
 #Option 1: Merge with matched based on nearest neighbor+ratio
 lfs.imp=merge(lfs.rec,df.match[,c("hhid","welfare_geom")],by="hhid",
@@ -320,9 +321,9 @@ lfs.imp=merge(lfs.rec,df.match[,c("hhid","welfare_geom")],by="hhid",
 lfs.imp = lfs.imp %>%
     rename(welfare=welfare_geom)
 
-gini.16=with(lfs.imp,gini.wtd(welfare,popwt))
+gini=with(lfs.imp,gini.wtd(welfare,popwt))
 
-gini.16
+gini
 
 lfs.imp$pov30 = ifelse(lfs.imp$welfare*(12/365)/cpi21/icp21<3,1,0)
 lfs.imp$pov42 = ifelse(lfs.imp$welfare*(12/365)/cpi21/icp21<4.2,1,0)
@@ -333,36 +334,4 @@ svydf <- svydesign(ids = ~hhid, data = lfs.imp,
                    weights = ~popwt)
 svymean(~pov30+pov42+pov83+povnpl, design=svydf,
         na.rm=TRUE,vartype = "ci")
-
-#Overall Poverty
-#tab1_2023=svyby(~pov30+pov42+pov83+povnpl, ~survey, design=svydf, svymean,
-na.rm=TRUE,vartype = "ci")
-
-#write.csv(tab1,paste(path,
-"/Outputs/Main/Tables/table 2 poverty_2016.csv",sep=""))
-
-#Option 2 
-lfs.imp.option2=merge(lfs.imp,df.pred.option2[,c("hhid","welfare_mean")],by="hhid",
-                      all.x=TRUE)
-
-lfs.imp.option2 = lfs.imp.option2 %>%
-    rename(welfare.option2=welfare_mean)
-
-lfs.imp.option2$welfare2 = with(lfs.imp.option2, ifelse(flag6_income==0, welfare, 
-                                                        welfare.option2))
-
-gini16.opt2=with(lfs.imp.option2,gini.wtd(welfare2,popwt))
-
-gini16.opt2
-
-lfs.imp.option2$pov30 = ifelse(lfs.imp.option2$welfare*(12/365)/cpi21/icp21<3,1,0)
-lfs.imp.option2$pov42 = ifelse(lfs.imp.option2$welfare*(12/365)/cpi21/icp21<4.2,1,0)
-lfs.imp.option2$pov83 = ifelse(lfs.imp.option2$welfare*(12/365)/cpi21/icp21<8.3,1,0)
-lfs.imp.option2$povnpl = ifelse(lfs.imp.option2$welfare<6966,1,0)
-
-svydf <- svydesign(ids = ~hhid, data = lfs.imp.option2, 
-                   weights = ~popwt)
-svymean(~pov30+pov42+pov83+povnpl, design=svydf,
-        na.rm=TRUE,vartype = "ci")
-
 

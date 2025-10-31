@@ -18,7 +18,7 @@ missing_report.rec <- data.rec %>%
                  names_to = "Variable", values_to = "PercentMissing")
 subset(missing_report.rec,PercentMissing>0)
 #based on report, these variables are excluded only when using linear models
-data.rec=subset(data.rec,sel=-c(sex_ratio))
+#data.rec=subset(data.rec,sel=-c(sex_ratio))
 
 data.rec=na.omit(data.rec)
 
@@ -47,5 +47,5 @@ missing_report.don <- data.don %>%
     pivot_longer(cols = everything(), 
                  names_to = "Variable", values_to = "PercentMissing")
 subset(missing_report.don,PercentMissing>0)
-data.don=subset(data.don,sel=-c(sex_ratio))
+#data.don=subset(data.don,sel=-c(sex_ratio))
 
