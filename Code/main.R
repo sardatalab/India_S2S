@@ -55,7 +55,7 @@ don.vars1=c("welfare") #variables to be imputed
 
 # Matching parameters stage 2
 X.mtc2=c("ymatch","hhsize","age_hhh") # nearest neighbor search variables
-don.vars2=c("ratio","welfare") #variables to be imputed
+don.vars2=c("ratio_tot","welfare") #variables to be imputed
 
 # Parameters to convert vectors in 2019 prices to 2021 PPP
 cpi21=0.88027848 #this is to convert to 2021PPPs

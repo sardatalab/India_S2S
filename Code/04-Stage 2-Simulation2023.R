@@ -44,16 +44,16 @@ coefs.l=list()
 foreach (a = c(0,1)) %do% {  # 0: HHs with income information, 1 otherwise
     if(a == 1) {
         data.don <- lfs.don %>%
-            filter(flag6_income==a) %>% #generate this variable as a filter  in both LFS rounds if income = 1 
+            filter(flag6_income2==a) %>% #generate this variable as a filter  in both LFS rounds if income = 1 
             select(-all_of(c(inc_vars))) # exclude income vars if zero ``
         data.rec <- lfs.rec %>%
-            filter(flag6_income==a) %>%
+            filter(flag6_income2==a) %>%
             select(-all_of(c(inc_vars)))
     } else {
         data.don <- lfs.don %>% #generating two objects based on availability of income data
-            filter(flag6_income==a) 
+            filter(flag6_income2==a) 
         data.rec <- lfs.rec %>%
-            filter(flag6_income==a)
+            filter(flag6_income2==a)
     }
     # Missing values report data.don
     missing_report.don <- data.don %>%
@@ -78,17 +78,18 @@ foreach (a = c(0,1)) %do% {  # 0: HHs with income information, 1 otherwise
                  "edu_hhh_none","edu_hhh_prim","edu_hhh_sec","edu_hhh_secincomp","edu_hhh_high")
     econ_vars = c("hh_main_agri","hh_main_ind","hh_main_serv","have_agri_emp","have_constr_emp",
                   "have_ind_emp","have_public_emp","have_semiskilled_worker", "sh_selfempl","public_emp_hhh")
-    disab_vars = c("has_conc_disab","has_comms_disab","eye_disab_hhh","hear_disab_hhh") #larger differences so dropping for now- can use in step 2
+    disab_vars = c("has_conc_disab","has_comms_disab","eye_disab_hhh","hear_disab_hhh") 
     inc_vars    = c("ln_rpcinc1", "sh_wages","sh_selfemp")
     oth_vars    = c("urban","district")
     
     #Combine the covariate names
     if(a == 0) {
-        covariates <- c(hh_vars,hhh_vars, econ_vars,inc_vars,oth_vars,"hidseq")
+        covariates <- c(hh_vars,hhh_vars, econ_vars,disab_vars, inc_vars, 
+                        oth_vars,"hidseq")
         X.mtc=c("ymatch","hhsize",
                 "hhb_year") # NN search variables
     } else {
-        covariates <- c(hh_vars,hhh_vars, econ_vars ,oth_vars,"hidseq")
+        covariates <- c(hh_vars,hhh_vars, econ_vars,disab_vars ,oth_vars,"hidseq")
         X.mtc=c("ymatch","hhsize","hhb_year") # NN search variables
     }
     data.rec$fic_dep_var=1
@@ -241,8 +242,8 @@ foreach (a = c(0,1)) %do% {  # 0: HHs with income information, 1 otherwise
         fA.wrnd <- create.fused(data.rec=samp.btemp, data.don=samp.atemp,
                                 mtc.ids=rnd.2$mtc.ids,
                                 z.vars=don.vars2) 
-        fA.wrnd$welfare = with(fA.wrnd,ifelse(flag6_income==0,
-                                              ratio*rpcinc1, welfare))
+        fA.wrnd$welfare = with(fA.wrnd,ifelse(flag6_income2==0,
+                                              ratio_tot*rpcinc_tot, welfare))
         fA.wrnd = fA.wrnd[,c("hhid","welfare")]
         names(fA.wrnd)[2]=paste("welfare_",j,sep="")
         simcons=merge(simcons,fA.wrnd,by="hhid")

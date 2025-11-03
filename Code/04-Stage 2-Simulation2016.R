@@ -43,16 +43,16 @@ coefs.l=list()
 foreach (a = c(0,1)) %do% {  # 0: HHs with income information, 1 otherwise
     if(a == 1) {
         data.don <- lfs.don %>%
-            filter(flag6_income==a) %>% #generate this variable as a filter  in both LFS rounds if income = 1 
+            filter(flag6_income2==a) %>% #generate this variable as a filter  in both LFS rounds if income = 1 
             select(-all_of(c(inc_vars))) # exclude income vars if zero ``
         data.rec <- lfs.rec %>%
-            filter(flag6_income==a) %>%
+            filter(flag6_income2==a) %>%
             select(-all_of(c(inc_vars)))
     } else {
         data.don <- lfs.don %>% #generating two objects based on availability of income data
-            filter(flag6_income==a) 
+            filter(flag6_income2==a) 
         data.rec <- lfs.rec %>%
-            filter(flag6_income==a)
+            filter(flag6_income2==a)
     }
     # Missing values report data.don
     missing_report.don <- data.don %>%
@@ -77,7 +77,7 @@ foreach (a = c(0,1)) %do% {  # 0: HHs with income information, 1 otherwise
                  "edu_hhh_none","edu_hhh_prim","edu_hhh_sec","edu_hhh_secincomp","edu_hhh_high")
     econ_vars = c("hh_main_agri","hh_main_ind","hh_main_serv","have_agri_emp","have_constr_emp",
                   "have_ind_emp","have_public_emp","have_semiskilled_worker", "sh_selfempl","public_emp_hhh")
-    disab_vars = c("has_conc_disab","has_comms_disab","eye_disab_hhh","hear_disab_hhh") #larger differences so dropping for now- can use in step 2
+    #disab_vars = c("has_conc_disab","has_comms_disab","eye_disab_hhh","hear_disab_hhh") #larger differences so dropping for now- can use in step 2
     inc_vars    = c("ln_rpcinc1", "sh_wages","sh_selfemp")
     oth_vars    = c("urban","district")
     
@@ -240,8 +240,8 @@ foreach (a = c(0,1)) %do% {  # 0: HHs with income information, 1 otherwise
         fA.wrnd <- create.fused(data.rec=samp.btemp, data.don=samp.atemp,
                                 mtc.ids=rnd.2$mtc.ids,
                                 z.vars=don.vars2) 
-        fA.wrnd$welfare = with(fA.wrnd,ifelse(flag6_income==0,
-                                              ratio*rpcinc1, welfare))
+        fA.wrnd$welfare = with(fA.wrnd,ifelse(flag6_income2==0,
+                                              ratio_tot*rpcinc_tot, welfare))
         fA.wrnd = fA.wrnd[,c("hhid","welfare")]
         names(fA.wrnd)[2]=paste("welfare_",j,sep="")
         simcons=merge(simcons,fA.wrnd,by="hhid")
@@ -333,36 +333,4 @@ svydf <- svydesign(ids = ~hhid, data = lfs.imp,
                    weights = ~popwt)
 svymean(~pov30+pov42+pov83+povnpl, design=svydf,
         na.rm=TRUE,vartype = "ci")
-
-#Overall Poverty
-#tab1_2023=svyby(~pov30+pov42+pov83+povnpl, ~survey, design=svydf, svymean,
-na.rm=TRUE,vartype = "ci")
-
-#write.csv(tab1,paste(path,
-"/Outputs/Main/Tables/table 2 poverty_2016.csv",sep=""))
-
-#Option 2 
-lfs.imp.option2=merge(lfs.imp,df.pred.option2[,c("hhid","welfare_mean")],by="hhid",
-                      all.x=TRUE)
-
-lfs.imp.option2 = lfs.imp.option2 %>%
-    rename(welfare.option2=welfare_mean)
-
-lfs.imp.option2$welfare2 = with(lfs.imp.option2, ifelse(flag6_income==0, welfare, 
-                                                        welfare.option2))
-
-gini16.opt2=with(lfs.imp.option2,gini.wtd(welfare2,popwt))
-
-gini16.opt2
-
-lfs.imp.option2$pov30 = ifelse(lfs.imp.option2$welfare*(12/365)/cpi21/icp21<3,1,0)
-lfs.imp.option2$pov42 = ifelse(lfs.imp.option2$welfare*(12/365)/cpi21/icp21<4.2,1,0)
-lfs.imp.option2$pov83 = ifelse(lfs.imp.option2$welfare*(12/365)/cpi21/icp21<8.3,1,0)
-lfs.imp.option2$povnpl = ifelse(lfs.imp.option2$welfare<6966,1,0)
-
-svydf <- svydesign(ids = ~hhid, data = lfs.imp.option2, 
-                   weights = ~popwt)
-svymean(~pov30+pov42+pov83+povnpl, design=svydf,
-        na.rm=TRUE,vartype = "ci")
-
 

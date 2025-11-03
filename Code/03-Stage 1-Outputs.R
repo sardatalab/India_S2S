@@ -419,19 +419,19 @@ summary(lfs.don[lfs.don$flag6_income==1,]$ratio)
 summary(lfs.don$ratio_tot)
 summary(lfs.don[lfs.don$flag6_income==1,]$ratio_tot) 
 #Winsorize bottom and top 1%
-# quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,probs=c(0.01,0.05,0.1,0.9,0.95,0.99))
-# 
-# lfs.don$ratio=ifelse(lfs.don$ratio>quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.99),
-#                      quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.99),lfs.don$ratio)
-# lfs.don$ratio=ifelse(lfs.don$ratio<quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.01),
-#                      quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.01),lfs.don$ratio)
-# 
-# quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,probs=c(0.01,0.05,0.1,0.9,0.95,0.99))
-# 
-# lfs.don$ratio_tot=ifelse(lfs.don$ratio_tot>quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.99),
-#                      quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.99),lfs.don$ratio_tot)
-# lfs.don$ratio_tot=ifelse(lfs.don$ratio_tot<quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.01),
-#                      quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.01),lfs.don$ratio_tot)
+quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,probs=c(0.01,0.05,0.1,0.9,0.95,0.99))
+
+lfs.don$ratio=ifelse(lfs.don$ratio>quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.99),
+                     quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.99),lfs.don$ratio)
+lfs.don$ratio=ifelse(lfs.don$ratio<quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.01),
+                     quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.01),lfs.don$ratio)
+
+quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,probs=c(0.01,0.05,0.1,0.9,0.95,0.99))
+
+lfs.don$ratio_tot=ifelse(lfs.don$ratio_tot>quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.99),
+                     quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.99),lfs.don$ratio_tot)
+lfs.don$ratio_tot=ifelse(lfs.don$ratio_tot<quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.01),
+                     quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.01),lfs.don$ratio_tot)
 
 summary(lfs.don[lfs.don$flag6_income==0,]$ratio) 
 summary(lfs.don[lfs.don$flag6_income==0,]$ratio_tot)
