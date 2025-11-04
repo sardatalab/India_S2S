@@ -32,8 +32,11 @@ for (pkg in packages) {
 lapply(packages, require, character.only = TRUE)
 
 # Set paths
-path <- "C:/Users/wb562318/Github"
-datapath <- "C:/Users/wb562318/OneDrive - WBG/Documents/POV-SAR/SL/PA/Analysis/Data/"
+#path <- "C:/Users/wb562318/Github"
+#datapath <- "C:/Users/wb562318/OneDrive - WBG/Documents/POV-SAR/SL/PA/Analysis/Data/"
+
+path <- "C:/Users/wb553773/Github/India_S2S"
+datapath <-"C:/Users/wb553773/WBG/Marta Schoch - Analysis/Data/"
 
 # Set global parameters
 
