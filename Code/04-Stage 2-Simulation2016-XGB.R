@@ -120,17 +120,23 @@ tuning_results <- foreach(i = 1:nrow(param_grid),
                                        best_rmse = best_rmse,
                                        best_iteration = best_iter)
 }
+# Stop the cluster after tuning
+stopCluster(cl)
+print(tuning_results)
 
 rm(X_train_full,y_train_full)
 
 write.csv(tuning_results,file=paste(path,
-        "/Outputs/Intermediate/Models/2016","_",
+        "/Outputs/Intermediate/Models/2019","_",
          Sys.Date(),".csv",sep=""),
           row.names = FALSE)
 
-# Stop the cluster after tuning
-stopCluster(cl)
-print(tuning_results)
+# Run these lines to upload tuning results previously saved
+#tuning_results=read.csv(paste(path,
+#                               "/Outputs/Intermediate/Models/2019","_",
+#                               "2025-11-03",".csv",sep=""))
+
+
 
 best_params_row <- tuning_results[which.min(tuning_results$best_rmse), ]
 
@@ -154,7 +160,7 @@ cat("Best nrounds (from tuning):", best_nrounds_full, "\n\n")
 # -----------------------------
 
 n_sim <- nsim2  # Number of simulations
-n.a = 0.8 #Bootstrap resampling parameter
+n.a = 0.9 #Bootstrap resampling parameter
 n_cores <- parallel::detectCores() - 1
 cl <- makeCluster(n_cores)
 registerDoParallel(cl)
@@ -290,6 +296,7 @@ lfs.imp=merge(lfs.rec,df.match[,c("hhid","welfare_geom")],by="hhid",
 lfs.imp = lfs.imp %>%
   rename(welfare=welfare_geom)
 
+
 gini.16=with(lfs.imp,gini.wtd(welfare,popwt))
 
 gini.16
@@ -304,6 +311,24 @@ svydf <- svydesign(ids = ~hhid, data = lfs.imp,
 svymean(~pov30+pov42+pov83+povnpl, design=svydf,
         na.rm=TRUE,vartype = "ci")
 
+
+
+#checks
+
+df=bind_rows(data.frame(survey=2016,
+                  lfs.imp[lfs.imp$flag6_income2==0,
+                          c("ratio_tot","welfare","popwt","rpcinc_tot")]),
+             data.frame(survey=2019,
+                        lfs.don[lfs.don$flag6_income2==0,
+                                c("ratio_tot","welfare","popwt","rpcinc_tot")]))
+
+ggplot(df, aes(x = log(rpcinc_tot), weight = popwt,
+               fill = as.factor(survey))) +
+  geom_density(alpha = 0.4, adjust=1.5) +
+  labs(x = "",
+       y = "Density",
+       title = "") +
+  xlim(c(0,20))
 
 
 

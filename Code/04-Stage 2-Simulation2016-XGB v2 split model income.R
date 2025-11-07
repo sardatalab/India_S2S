@@ -289,7 +289,7 @@ foreach (a = c(0,1)) %do% {  # 0: HHs with income information, 1 otherwise
         cv_model <- xgb.cv(
             params = best_params,
             data = dtrain,
-            nrounds = 1000,
+            nrounds = 100,
             nfold = 5,
             early_stopping_rounds = 100,
             verbose = 0
