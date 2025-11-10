@@ -1,40 +1,44 @@
 #lfs: 2019
-lfs19=lfs
+lfs19=lfs.don
+lfs19$hhid=NULL
+lfs19=subset(lfs19,select=c(district, urban,popwt,welfare))
 lfs19$survey="LFS_19"
 #2016
 lfs16.orig=read_dta(paste(datapath,
-                       "cleaned/lfs2016_clean.dta",
+                       "lfs2016_imputed.dta",
                        sep="")) 
-lfs16.orig=subset(lfs16.orig,select=c(hhid,district, urban,popwt))
+lfs16.orig=subset(lfs16.orig,select=c(district, urban,popwt,welfare))
+lfs16.imp=lfs16.orig
 
-lfs16.sim=readRDS(paste(datapath,
-      "cleaned/Stage 2/Final/Simulations_model_match_2016.rds",sep=""))
-lfs16.sim$welfare=apply(lfs16.sim[,-1],
-      1,geometric_mean,na.rm=TRUE)
-lfs16.sim=subset(lfs16.sim,select = c("hhid","welfare"))
-
-lfs16.imp=merge(lfs16.orig,lfs16.sim,by="hhid",
-              all.x=TRUE)
+# lfs16.sim=readRDS(paste(datapath,
+#       "cleaned/Stage 2/Final/Simulations_model_match_2016.rds",sep=""))
+# lfs16.sim$welfare=apply(lfs16.sim[,-1],
+#       1,geometric_mean,na.rm=TRUE)
+# lfs16.sim=subset(lfs16.sim,select = c("hhid","welfare"))
+# 
+# lfs16.imp=merge(lfs16.orig,lfs16.sim,by="hhid",
+#               all.x=TRUE)
 lfs16.imp$survey="LFS_16"
-lfs16.imp$hhid=NULL
+lfs16.imp$district=as.factor(lfs16.imp$district)
 
 #2023
 
 lfs23.orig=read_dta(paste(datapath,
-                          "cleaned/lfs2023_clean.dta",
+                          "lfs2023_imputed.dta",
                           sep="")) 
-lfs23.orig=subset(lfs23.orig,select=c(hhid,district, urban,popwt))
+lfs23.orig=subset(lfs23.orig,select=c(district, urban,popwt,welfare))
 
-lfs23.sim=readRDS(paste(datapath,
-                        "cleaned/Stage 2/Final/Simulations_model_match_2023.rds",sep=""))
-lfs23.sim$welfare=apply(lfs23.sim[,-1],
-                        1,geometric_mean,na.rm=TRUE)
-lfs23.sim=subset(lfs23.sim,select = c("hhid","welfare"))
-
-lfs23.imp=merge(lfs23.orig,lfs23.sim,by="hhid",
-                all.x=TRUE)
+lfs23.imp=lfs23.orig
+# lfs23.sim=readRDS(paste(datapath,
+#                         "cleaned/Stage 2/Final/Simulations_model_match_2023.rds",sep=""))
+# lfs23.sim$welfare=apply(lfs23.sim[,-1],
+#                         1,geometric_mean,na.rm=TRUE)
+# lfs23.sim=subset(lfs23.sim,select = c("hhid","welfare"))
+# 
+# lfs23.imp=merge(lfs23.orig,lfs23.sim,by="hhid",
+#                 all.x=TRUE)
 lfs23.imp$survey="LFS_23"
-lfs23.imp$hhid=NULL
+lfs23.imp$district=as.factor(lfs23.imp$district)
 
 ###APPEND THREE ROUNDS 
 
@@ -78,11 +82,11 @@ ggplot(df_ecdf, aes(x = log(welfare), y = ecdf, color = survey)) +
     annotate("text", x = line830, y = 0, label = "8.3", vjust = 1.5,size=1)
 
 ggsave(paste(path,
-             "/Outputs/Main/Figures/figure 8b_all.png",sep=""),
+             "/Outputs/Main/Figures/ecdf_all.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 
-hies16=read_dta("C:/Users/wb562318/Downloads/hies16ppp.dta")
+hies16=read_dta(paste(datapath,"hies16ppp.dta",sep=""))
 hies16$survey="HIES_16"
 hies16$district=NULL
 hies16=hies16 %>%
@@ -101,7 +105,7 @@ ggplot(df16, aes(x = log(welfare), weight = popwt,
     geom_density(alpha = 0.4, adjust=1.5) +
     labs(x = "Log Consumption",
          y = "Density",
-         title = "Original and Imputed Log Consumption by Survey (2016-2023)")
+         title = "Original and Imputed Log Consumption by Survey (2016)")
 
 
 df16_ecdf <- df16 %>%
@@ -116,7 +120,7 @@ ggplot(df16_ecdf, aes(x = log(welfare), y = ecdf, color = survey)) +
     geom_step() +
     labs(x = "Log Consumption",
          y = "Density",
-         title = "ECDF of Imputed Log Consumption by survey (2016-23)")+
+         title = "ECDF of Imputed Log Consumption by survey (2016)")+
     geom_vline(xintercept = 3,linetype="dashed",size=0.5)+
     geom_vline(xintercept = 4.2,linetype="dashed",size=0.5)+
     geom_vline(xintercept = 8.3,linetype="dashed",size=0.5)+
