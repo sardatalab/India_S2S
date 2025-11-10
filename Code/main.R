@@ -9,7 +9,7 @@
 rm(list=ls())
 
 #renv::init()
-
+renv::restore()
 # Check intallation of required packages
 packages <- c(
   "StatMatch", "survey", "questionr", "reldist", "glmnet", "useful",
@@ -35,8 +35,6 @@ if (length(missing_pkgs)) {
   message("All packages already installed.")
 }
 
-
-#renv::restore()
 
 # Load all packages
 lapply(packages, require, character.only = TRUE)
