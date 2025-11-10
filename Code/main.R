@@ -44,7 +44,7 @@ datapath <-"C:/Users/wb553773/WBG/Marta Schoch - Analysis/Data/"
 nsim1=10
 
 # Number of simulations stage 2
-nsim2=10
+nsim2=100
 
 # Resampling parameter stages 1 and 2
 n.a = .9

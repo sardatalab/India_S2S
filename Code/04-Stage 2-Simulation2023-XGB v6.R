@@ -279,8 +279,8 @@ foreach(sim = 1:n_sim) %do% {
     ddon <- xgb.DMatrix(data = X_don)
     Y.a=predict(model, ddon)
     #Receiver
-    mod.b.full=lm(ln_rpcinc_tot~.,data=lfs.rec[lfs.rec$flag6_income2==1,
-                                               c("ln_rpcinc_tot",covariates)])
+    mod.b.full=lm(ln_rpcinc1~.,data=lfs.rec[lfs.rec$flag6_income2==1,
+                                    c("ln_rpcinc1",covariates)])
     X_test = model.matrix(mod.b.full)
     dtest <- xgb.DMatrix(data = X_test)
     Y.b=predict(model, dtest)
