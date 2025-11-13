@@ -15,7 +15,7 @@ packages <- c(
   "StatMatch", "survey", "questionr", "reldist", "glmnet", "useful",
   "data.table", "haven", "statar", "parallel", "foreach", "doParallel",
   "dplyr", "tidyr", "dineq", "convey", "renv", "transport", "ggridges",
-  "ggplot2","forcats","scales","readxl"
+  "ggplot2","forcats","scales","readxl","Hmisc"
 )
 
 # Install missing packages
@@ -37,6 +37,7 @@ lapply(packages, require, character.only = TRUE)
 
 path <- "C:/Users/wb553773/Github/India_S2S"
 datapath <-"C:/Users/wb553773/WBG/Marta Schoch - Analysis/Data/"
+outpath <- "C:/Users/wb553773/WBG/Marta Schoch - Analysis/Out/s2s/"
 
 # Set global parameters
 
@@ -44,7 +45,7 @@ datapath <-"C:/Users/wb553773/WBG/Marta Schoch - Analysis/Data/"
 nsim1=10
 
 # Number of simulations stage 2
-nsim2=100
+nsim2=20
 
 # Resampling parameter stages 1 and 2
 n.a = .9

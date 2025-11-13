@@ -376,7 +376,7 @@ tab1=svymean(~pov30+pov42+pov83+povnpl, design=svydf,
         na.rm=TRUE,vartype = "ci")
 tab1
 
-write.csv(tab1,file=paste(path,
+write.csv(tab1,file=paste(outpath,
        "/Outputs/Main/Tables/Poverty_imputed_2023.csv",sep=""),
       row.names = FALSE)
 

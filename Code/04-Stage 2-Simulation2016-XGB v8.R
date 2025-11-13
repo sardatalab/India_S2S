@@ -1,12 +1,13 @@
+# Sames as v6, but training data changed for HHs w/o income (now HIES)
 # Different strategies: First: hot deck random matching between
 # LFS 2019 (donor, trained on HHs with income), and LFS 2016
 # (receiver, HHS with income) using prcinc_tot, hhsize, and hhb_year 
 # to find nearest neighbor
 # Second model: Parallelized Hyperparameter Tuning Loop plus model to 
-# predict welfare via PMM between 2019
+# predict welfare via PMM between HIES 2019
 # (donor, trained on HHs w/o income) and 2016 (receiver, HHS w/o income)
 # using ymatch, prcinc_tot, hhsize, and hhb_year to find nearest neighbor
-# Best version as of 11-7-25
+# Best version as of 11-13-25 at 12:15 pm
 
 
 library(xgboost)
@@ -16,7 +17,7 @@ library(matrixStats)
 # -----------------------------
 # Inputs:
 # -----------------------------
-# training Data: LFS 2019
+# training Data for HHs with income: LFS 2019
 lfs.don <- read_dta(paste(datapath,
                           "cleaned/Stage 1/Final/Imputed_PLFS_22_match.dta",
                           sep="")) 
@@ -31,6 +32,19 @@ missing_report.don <- lfs.don %>%
     pivot_longer(cols = everything(), 
                  names_to = "Variable", values_to = "PercentMissing")
 subset(missing_report.don,PercentMissing>0)
+
+# training Data for HHs w/o income: LFS 2019
+
+hies.don=read_dta(paste(datapath,"cleaned/hies2019_clean.dta",sep="")) 
+hies.don$hhb_year=2019-hies.don$age_hhh
+hies.don$district=as.factor(hies.don$district)
+hies.don$logwelfare=log(hies.don$welfare)
+missing_report.don.hies <- hies.don %>%
+  summarise(across(everything(), ~ mean(is.na(.)) * 100)) %>%
+  pivot_longer(cols = everything(), 
+               names_to = "Variable", values_to = "PercentMissing")
+subset(missing_report.don.hies,PercentMissing>0)
+hies.don$flag6_income2=with(hies.don,ifelse(rpcinc1>0,0,1))
 
 #####Prepare receiver survey##### 
 lfs.rec=read_dta(paste(datapath,
@@ -49,16 +63,16 @@ missing_report.rec <- lfs.rec %>%
                  names_to = "Variable", values_to = "PercentMissing")
 subset(missing_report.rec,PercentMissing>0)
 
-vars1=setdiff(names(lfs.don),names(lfs.rec))
+vars1=setdiff(names(hies.don),names(lfs.rec))
 #vars1=setdiff(vars1,c("welfare","ratio_tot"))
-vars2=setdiff(names(lfs.rec),names(lfs.don))
+vars2=setdiff(names(lfs.rec),names(hies.don))
 
 var2excl=c(vars1,vars2,"hhid","psu","weight",
-           "rpcinc1","rpcwage1","rpcself1",
+           "rpcinc1","rpcwage1","rpcself1","age_hhh",
            "flag6_income","flag6_income2",
            "public_emp_hhh","private_emp_hhh",
            "popwt","ln_rpcinc1","ln_rpcwage1","ln_rpcself1")
-covariates=setdiff(names(lfs.don),var2excl)
+covariates=setdiff(names(hies.don),var2excl)
 
 set.seed(1729)  # For reproducibility
 
@@ -67,7 +81,7 @@ set.seed(1729)  # For reproducibility
 # -----------------------------
 
 n_sim <- nsim2  # Number of simulations
-n.a = 0.9 #Bootstrap resampling parameter
+n.a = 0.8 #Bootstrap resampling parameter
 
 start_time <- Sys.time()  # Start timer
 #match
@@ -127,88 +141,88 @@ lfs.imp.0 = lfs.imp.0 %>%
     mutate(logwelfare=log(welfare))
 
 # # -----------------------------
-# # Step 3: Hyperparameter Tuning on 2016 LFS data for HHs with 
-# # flag6_income2==1, i.e., without income information
+# # Step 2: Hyperparameter Tuning on 2019 HIES data for HHs without income
+# # without income information
 # # Run only once to find optimal parameters
 # # -----------------------------
 
-# # Set up parallel backend using available cores
-# n_cores <- parallel::detectCores() - 1  # Reserve one core for OS
-# cl <- makeCluster(n_cores)
-# registerDoParallel(cl)
-# 
-# max_depth_values <- c(3, 5, 7)
-# gamma_values <- c(0, 0.1, 0.3)
-# subsample_values <- c(0.7, 0.8, 0.9)
-# colsample_bytree_values <- c(0.6, 0.8, 1.0)
-# 
-# # Create a grid of all parameter combinations
-# param_grid <- expand.grid(max_depth = max_depth_values,
-#                           gamma = gamma_values,
-#                           subsample = subsample_values,
-#                           colsample_bytree = colsample_bytree_values)
-# 
-# # Base parameters (others will be added from the grid)
-# base_params <- list(
-#     objective = "reg:squarederror",
-#     eval_metric = "rmse",
-#     eta = 0.1,
-#     nthread = n_cores
-# )
-# 
-# # Prepare training data (2019), HHs w/o income
-# mod.full=lm(logwelfare~.,
-#             data=lfs.don[lfs.don$flag6_income2==1,
-#                          c("logwelfare",covariates)])
-# X_train_full = model.matrix(mod.full)
-# y_train_full <- lfs.don[lfs.don$flag6_income2==1,]$logwelfare
-# 
-# 
-# # Parallel grid search using foreach
-# tuning_results_1 <- foreach(i = 1:nrow(param_grid),
-#         .combine = rbind,
-#         .packages = "xgboost",
-#         .export = c("X_train_full", "y_train_full")) %dopar% {
-# 
-#     dtrain_full <- xgb.DMatrix(data = X_train_full, label = y_train_full)
-#     params <- c(base_params, list(max_depth = param_grid$max_depth[i],
-#                                   gamma = param_grid$gamma[i],
-#                                   subsample = param_grid$subsample[i],
-#                                   colsample_bytree = param_grid$colsample_bytree[i]))
-# 
-#     cv_model <- xgb.cv(
-#         params = params,
-#         data = dtrain_full,
-#         nrounds = 100,
-#         nfold = 5,
-#         early_stopping_rounds = 10,
-#         verbose = 0
-#     )
-# 
-#     best_iter <- cv_model$best_iteration
-#     best_rmse <- cv_model$evaluation_log$test_rmse_mean[best_iter]
-# 
-#     data.frame(max_depth = param_grid$max_depth[i],
-#                gamma = param_grid$gamma[i],
-#                subsample = param_grid$subsample[i],
-#                colsample_bytree = param_grid$colsample_bytree[i],
-#                best_rmse = best_rmse,
-#                best_iteration = best_iter)
-# }
-# # Stop the cluster after tuning
-# stopCluster(cl)
-# print(tuning_results_1)
-# rm(mod.full,X_train_full,y_train_full)
-# 
-# write.csv(tuning_results_1,file=paste(path,
-#                                       "/Outputs/Intermediate/Models/XGB_tuning_2019_1_v6","_",
-#                                       Sys.Date(),".csv",sep=""),
-#           row.names = FALSE)
+# Set up parallel backend using available cores
+n_cores <- parallel::detectCores() - 1  # Reserve one core for OS
+cl <- makeCluster(n_cores)
+registerDoParallel(cl)
+
+max_depth_values <- c(3, 5, 7)
+gamma_values <- c(0, 0.1, 0.3)
+subsample_values <- c(0.7, 0.8, 0.9)
+colsample_bytree_values <- c(0.6, 0.8, 1.0)
+
+# Create a grid of all parameter combinations
+param_grid <- expand.grid(max_depth = max_depth_values,
+                          gamma = gamma_values,
+                          subsample = subsample_values,
+                          colsample_bytree = colsample_bytree_values)
+
+# Base parameters (others will be added from the grid)
+base_params <- list(
+    objective = "reg:squarederror",
+    eval_metric = "rmse",
+    eta = 0.1,
+    nthread = n_cores
+)
+
+# Prepare training data (2019), HHs w/o income
+mod.full=lm(logwelfare~.,
+            data=hies.don[hies.don$flag6_income2==1,
+                         c("logwelfare",covariates)])
+X_train_full = model.matrix(mod.full)
+y_train_full <- hies.don[hies.don$flag6_income2==1,]$logwelfare
+
+
+# Parallel grid search using foreach
+tuning_results_1 <- foreach(i = 1:nrow(param_grid),
+        .combine = rbind,
+        .packages = "xgboost",
+        .export = c("X_train_full", "y_train_full")) %dopar% {
+
+    dtrain_full <- xgb.DMatrix(data = X_train_full, label = y_train_full)
+    params <- c(base_params, list(max_depth = param_grid$max_depth[i],
+                                  gamma = param_grid$gamma[i],
+                                  subsample = param_grid$subsample[i],
+                                  colsample_bytree = param_grid$colsample_bytree[i]))
+
+    cv_model <- xgb.cv(
+        params = params,
+        data = dtrain_full,
+        nrounds = 100,
+        nfold = 5,
+        early_stopping_rounds = 10,
+        verbose = 0
+    )
+
+    best_iter <- cv_model$best_iteration
+    best_rmse <- cv_model$evaluation_log$test_rmse_mean[best_iter]
+
+    data.frame(max_depth = param_grid$max_depth[i],
+               gamma = param_grid$gamma[i],
+               subsample = param_grid$subsample[i],
+               colsample_bytree = param_grid$colsample_bytree[i],
+               best_rmse = best_rmse,
+               best_iteration = best_iter)
+}
+# Stop the cluster after tuning
+stopCluster(cl)
+print(tuning_results_1)
+rm(mod.full,X_train_full,y_train_full)
+ 
+ write.csv(tuning_results_1,file=paste(path,
+                    "/Outputs/Intermediate/Models/XGB_tuning_hies_2019_1_v8","_",
+                    Sys.Date(),".csv",sep=""),
+           row.names = FALSE)
 
 # Run these lines to load tuning results previously saved
-tuning_results_1=read.csv(paste(path,
-               "/Outputs/Intermediate/Models/XGB_tuning_2019_1_v6","_",
-               "2025-11-04",".csv",sep=""))
+#tuning_results_1=read.csv(paste(path,
+#               "/Outputs/Intermediate/Models/XGB_tuning_hies_2019_1_v8","_",
+#               "2025-11-12",".csv",sep=""))
 
 best_params_row_1 <- tuning_results_1[which.min(tuning_results_1$best_rmse), ]
 
@@ -228,7 +242,7 @@ print(best_params_1)
 
 
 # -----------------------------
-# Step 4: Predictions via PMM in 2016 (HHs w/o income)
+# Step 3: Predictions via PMM in 2016 (HHs w/o income)
 # -----------------------------
 
 n_cores <- parallel::detectCores() - 1
@@ -239,11 +253,11 @@ registerDoParallel(cl)
 simcons_match=subset(lfs.rec,flag6_income2==1,sel=c(hhid))
 
 X.mtc2=c("ymatch","hhsize","hhb_year")
-
+n_sim=nsim2
 foreach(sim = 1:n_sim) %do% {
     cat("Simulation ",sim, "\n")
     # Bootstrap the training data
-    train_sample <- lfs.don %>%   #Ensure lfs.don is now lfs.imp.0
+    train_sample <- hies.don %>%   
         filter(flag6_income2==1) %>%
         group_by(district) %>%
         sample_frac(n.a)
@@ -274,7 +288,7 @@ foreach(sim = 1:n_sim) %do% {
     
     # Get predictions for each survey round
     #Donor
-    mod.a.full=lm(logwelfare~.,data=lfs.don[lfs.don$flag6_income2==1,
+    mod.a.full=lm(logwelfare~.,data=hies.don[hies.don$flag6_income2==1,
                                             c("logwelfare",covariates)])
     X_don = model.matrix(mod.a.full)
     ddon <- xgb.DMatrix(data = X_don)
@@ -290,7 +304,7 @@ foreach(sim = 1:n_sim) %do% {
         hhid = lfs.rec[lfs.rec$flag6_income2==1, "hhid"],
         ymatch = exp(Y.b)) 
     X.samp.a.pred = data.table(
-        hhid = lfs.don[lfs.don$flag6_income2==1, "hhid"],
+        hhid = hies.don[hies.don$flag6_income2==1, "hhid"],
         ymatch = exp(Y.a))
     
     rm(Y.b,Y.a)
@@ -302,7 +316,7 @@ foreach(sim = 1:n_sim) %do% {
     samp.btemp=merge.data.table(lfs.rec[lfs.rec$flag6_income2==1,],
                                 X.samp.b.pred,
                                 by="hhid",all=TRUE,sort=TRUE)
-    samp.atemp=merge.data.table(lfs.don[lfs.don$flag6_income2==1,],
+    samp.atemp=merge.data.table(hies.don[hies.don$flag6_income2==1,],
                                 X.samp.a.pred,
                                 by="hhid",all=TRUE,sort=TRUE)
     samp.btemp=data.frame(samp.btemp)
@@ -310,8 +324,8 @@ foreach(sim = 1:n_sim) %do% {
 
     
     
-    if (min(table(lfs.don[lfs.don$flag6_income2==1,]$district,
-                  lfs.don[lfs.don$flag6_income2==1,]$urban))>0){
+    if (min(table(hies.don[hies.don$flag6_income2==1,]$district,
+                  hies.don[hies.don$flag6_income2==1,]$urban))>0){
         group.v <- c("district","urban")  # donation classes
     }  else {
         group.v <- c("district")  # donation classes
@@ -377,9 +391,9 @@ tab1=svymean(~pov30+pov42+pov83+povnpl, design=svydf,
         na.rm=TRUE,vartype = "ci")
 tab1
 
-write.csv(tab1,file=paste(path,
+#write.csv(tab1,file=paste(path,
        "/Outputs/Main/Tables/Poverty_imputed_2016.csv",sep=""),
       row.names = FALSE)
 
-write_dta(lfs.imp,paste(datapath,
+#write_dta(lfs.imp,paste(datapath,
        "/lfs2016_imputed.dta",sep=""))
