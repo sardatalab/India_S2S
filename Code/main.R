@@ -9,7 +9,7 @@
 rm(list=ls())
 
 #renv::init()
-renv::restore()
+#renv::restore()
 # Check intallation of required packages
 packages <- c(
   "StatMatch", "survey", "questionr", "reldist", "glmnet", "useful",
@@ -19,29 +19,20 @@ packages <- c(
   "GGally"
 )
 
-# CRAN mirror (optional but recommended)
-options(repos = c(CRAN = "https://cloud.r-project.org"))
-
-# Function to check for installed packages
-is_installed <- function(pkg) {
-  suppressWarnings(requireNamespace(pkg, quietly = TRUE))
+# Install missing packages
+installed <- installed.packages()
+for (pkg in packages) {
+  if (!(pkg %in% rownames(installed))) {
+    install.packages(pkg, dependencies = TRUE)
+  }
 }
-
-missing_pkgs <- packages[!vapply(packages, is_installed, logical(1))]
-
-if (length(missing_pkgs)) {
-  install.packages(missing_pkgs)
-} else {
-  message("All packages already installed.")
-}
-
 
 # Load all packages
 lapply(packages, require, character.only = TRUE)
 
 # Set paths
 path <- "C:/Users/wb553773/GitHub/India_S2S"
-datapath <- "C:/Users/wb553773/WBG/Nishtha Kochhar - INDDATA/S2S imputations_CES_LFS/Reproducibility package"
+datapath <- "C:/Users/wb553773/OneDrive - WBG/Stats Team/IND S2S imputation/Reproducibility package"
 
 # Set global parameters
 

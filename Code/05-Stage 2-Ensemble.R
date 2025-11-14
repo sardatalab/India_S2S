@@ -35,6 +35,13 @@ pov_results <- foreach (year = years, .combine = "rbind",
   data.rec=merge(plfs.rec,df[,c("hhid","mpce_sp_def_ind")],
                  by="hhid",all.x = TRUE)
   data.rec$pop_wgt = with(data.rec,weight*hh_size)
+  
+  ## New block: Impute within survey using XGBoost for HHS with missing welfare
+  hh_vars = grep("^hh_", names(data.rec), value = TRUE)
+  oth_vars = c("urban","state","log_consumption_pc_adj")
+  
+  
+  
   ##Enable when ready to save final results
   write_dta(data.rec,paste0(datapath,
         "/Data/Stage 2/Final/IND_",year,"_PLFS_imputed_ratio_",sim,
