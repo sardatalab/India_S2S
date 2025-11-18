@@ -34,13 +34,129 @@ pov_results <- foreach (year = years, .combine = "rbind",
                            1,use_stat,na.rm=TRUE)
   data.rec=merge(plfs.rec,df[,c("hhid","mpce_sp_def_ind")],
                  by="hhid",all.x = TRUE)
+  rm(df)
   data.rec$pop_wgt = with(data.rec,weight*hh_size)
-  
+  data.rec$state=as.factor(data.rec$state)
+  data.rec$logwelfare=log(data.rec$mpce_sp_def_ind)
+  data.rec$logconsumption_pc_adj=log(data.rec$consumption_pc_adj)
+
   ## New block: Impute within survey using XGBoost for HHS with missing welfare
-  hh_vars = grep("^hh_", names(data.rec), value = TRUE)
-  oth_vars = c("urban","state","log_consumption_pc_adj")
-  
-  
+  if(stage3==1){
+    data.rec.temp=data.rec %>%
+      mutate(logwelfare=ifelse(is.na(logwelfare),-999,logwelfare)) %>%
+      filter(!is.na(logconsumption_pc_adj) & !is.na(pop_wgt) &
+               logconsumption_pc_adj>-Inf) %>%
+      select(where(~ !any(is.na(.x)))) %>%
+      mutate(logwelfare=ifelse(logwelfare==-999,NA,logwelfare),
+             ratio=exp(logwelfare)/exp(logconsumption_pc_adj))
+    hh_vars = grep("^hh_", names(data.rec.temp), value = TRUE)
+    oth_vars = c("urban","state","logconsumption_pc_adj")
+    covariates=c(hh_vars,oth_vars)
+    
+    #Create dummy to split donor and receiver datasets later
+    data.rec.temp$dummy.rec=ifelse(is.na(data.rec.temp$logwelfare),1,0)
+    
+    simcons_na=subset(data.rec.temp[data.rec.temp$dummy.rec==1,],
+                      sel=c(hhid))
+    foreach(j = 1:nsim2) %do% {
+      cat("Simulation Stage 3: ",j, "\n")
+      # Bootstrap the training data
+      train_sample <- data.rec.temp %>%   
+        filter(dummy.rec==0) %>%
+        group_by(state) %>%
+        sample_frac(n.a)
+      
+      mod.a=lm(logwelfare~.,data=train_sample[, c("logwelfare",covariates)])
+      X_train = model.matrix(mod.a)
+      y_train <- train_sample$logwelfare
+      dtrain <- xgb.DMatrix(data = X_train, label = y_train)
+      
+      # Run CV to get optimal nrounds on the bootstrap sample
+      cv_model <- xgb.cv(
+        data = dtrain,
+        nrounds = 1000,
+        nfold = 5,
+        early_stopping_rounds = 100,
+        verbose = 0
+      )
+      best_nrounds <- cv_model$best_iteration
+      
+      # Train model on the bootstrap sample
+      model <- xgboost(
+        data = dtrain,
+        nrounds = best_nrounds,
+        verbose = 0
+      )
+      
+      # Get predictions for each survey round
+      mod.full=lm(consumption_pc_adj~.,data.rec.temp[,
+                                    c("dummy.rec","consumption_pc_adj",covariates)])
+      X_full=model.matrix(mod.full)
+      
+      #Donor
+      X_don = X_full[X_full[,"dummy.rec"]==0,]
+      X_don=X_don[,colnames(X_don)!="dummy.rec"]
+      ddon <- xgb.DMatrix(data = X_don)
+      Y.a=predict(model, ddon)
+      #Receiver
+      X_rec = X_full[X_full[,"dummy.rec"]==1,]
+      X_rec=X_rec[,colnames(X_rec)!="dummy.rec"]
+      drec <- xgb.DMatrix(data = X_rec)
+      Y.b=predict(model, drec)
+      
+      X.samp.b.pred=data.table(
+        hhid = data.rec.temp[data.rec.temp$dummy.rec==1, "hhid"],
+        ymatch = exp(Y.b)) 
+      X.samp.a.pred = data.table(
+        hhid = data.rec.temp[data.rec.temp$dummy.rec==0, "hhid"],
+        ymatch = exp(Y.a))
+      
+      rm(Y.b,Y.a)
+      
+      colnames(X.samp.b.pred)=c("hhid","ymatch")
+      colnames(X.samp.a.pred)=c("hhid","ymatch")
+      
+      #Merge predictions with original base
+      samp.btemp=merge.data.table(data.rec.temp[data.rec.temp$dummy.rec==1,],
+                                  X.samp.b.pred,
+                                  by="hhid",all=TRUE,sort=TRUE)
+      samp.atemp=merge.data.table(data.rec.temp[data.rec.temp$dummy.rec==0,],
+                                  X.samp.a.pred,
+                                  by="hhid",all=TRUE,sort=TRUE)
+      samp.btemp=data.frame(samp.btemp)
+      samp.btemp$ratio=NULL
+      samp.atemp=data.frame(samp.atemp)
+      
+      if (min(table(data.rec.temp[data.rec.temp$dummy.rec==0,]$state,
+                    data.rec.temp[data.rec.temp$dummy.rec==0,]$hh_type))>0){
+        group.v <- c("state","hh_type")  # donation classes
+      }  else {
+        group.v <- c("state","urban")  # donation classes
+      }
+      
+      #Matching using lasso predictions and random nearest neighbor distance hot deck (D'Orazio, 2017)
+      rnd.2 <- RANDwNND.hotdeck(data.rec=samp.btemp, data.don=samp.atemp,
+                                match.vars=X.mtc3, don.class=group.v,
+                                dist.fun="Euclidean",
+                                cut.don="min")
+      
+      #Create fused dataset
+      fA.wrnd <- create.fused(data.rec=samp.btemp, data.don=samp.atemp,
+                              mtc.ids=rnd.2$mtc.ids,
+                              z.vars=don.vars3) 
+      fA.wrnd$mpce_sp_def_ind = with(fA.wrnd,
+                                     ratio*consumption_pc_adj)
+      fA.wrnd = fA.wrnd[,c("hhid","mpce_sp_def_ind")]
+      names(fA.wrnd)[2]=paste("mpce_sp_def_ind_",j,sep="")
+      simcons_na=merge(simcons_na,fA.wrnd,by="hhid")
+      rm(samp.atemp,samp.btemp,fA.wrnd,rnd.2)
+    } #end for loop
+    rm(data.rec.temp)
+    df=simcons_na
+    rm(simcons_na)
+    df$mpce_sp_def_ind_na=apply(df[,2:(sim+1)],
+                             1,use_stat,na.rm=TRUE)
+  } #end if (stage3==1)
   
   ##Enable when ready to save final results
   write_dta(data.rec,paste0(datapath,

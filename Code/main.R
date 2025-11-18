@@ -16,14 +16,14 @@ packages <- c(
   "data.table", "haven", "statar", "parallel", "foreach", "doParallel",
   "dplyr", "tidyr", "dineq", "convey", "renv", "transport", "ggridges",
   "ggplot2","forcats","scales","readxl","Hmisc","viridis","ggh4x","patchwork",
-  "GGally"
+  "GGally","xgboost","matrixStats"
 )
 
 # Install missing packages
 installed <- installed.packages()
 for (pkg in packages) {
   if (!(pkg %in% rownames(installed))) {
-    install.packages(pkg, dependencies = TRUE)
+    install.packages(pkg)
   }
 }
 
@@ -45,6 +45,10 @@ nsim2=100
 # Resampling parameter stages 1 and 2
 n.a = .8
 
+# Third stage parameter to complete NAs after second stage
+# imputation (stage3==1). Default: stage3==0
+stage3==0
+
 # Seed for reproducibility
 seed = 1729
 
@@ -55,6 +59,10 @@ don.vars1=c("mpce_sp_def_ind") #variables to be imputed
 # Matching parameters stage 2
 X.mtc2=c("ymatch","hh_size","hhb_year") # nearest neighbor search variables
 don.vars2=c("ratio") #variables to be imputed
+
+# Matching parameters stage 3 (if stage3==1)
+X.mtc3=c("ymatch","hh_size","hh_head_age") # nearest neighbor search variables
+don.vars3=c("ratio") #variables to be imputed
 
 # Statistic to be used to ensemble simulations in stage 2
 use_stat="median" #alternatively: mean, median geometric_mean
@@ -71,7 +79,7 @@ lic=3.0
 lmic=4.2
 umic=8.3
 
-# Run the R scripts
+# Run R scripts
 
 #Stage 1
 source(file.path(path, "Code/00-Stage 1-Clean.R"),chdir = TRUE, encoding = "UTF-8")
