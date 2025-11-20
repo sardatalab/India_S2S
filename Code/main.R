@@ -1,7 +1,8 @@
 ### Estimating a poverty trend in Sri Lanka: A Survey-to-Survey Imputation Approach
 ### Reproducibility Package
 ### This version: October 29 2025
-### Author: Jaime Fernandez Romero (jfernandezromero@worldbank.org)
+### Authors: Jaime Fernandez Romero (jfernandezromero@worldbank.org) and
+###          Marta Schoch (mschoch@worldbank.org)
 
 ### Main R Script
 
