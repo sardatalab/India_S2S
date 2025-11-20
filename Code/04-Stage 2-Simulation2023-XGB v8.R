@@ -9,22 +9,17 @@
 # using ymatch, prcinc_tot, hhsize, and hhb_year to find nearest neighbor
 # Best version as of 11-13-25 at 12:15 pm
 
-
-library(xgboost)
-library(matrixStats)
-
-
 # -----------------------------
 # Inputs:
 # -----------------------------
 # training Data for HHs with income: LFS 2019
-lfs.don <- read_dta(paste(datapath,
-                          "cleaned/Stage 1/Final/Imputed_PLFS_22_match.dta",
-                          sep="")) 
-lfs.don$ratio_tot=with(lfs.don,welfare/rpcinc_tot)
+#lfs.don <- read_dta(paste(datapath,
+#        "cleaned/Stage 1/Final/Imputed_LFS_19_final_at_least_for_now.dta.dta",
+#                          sep="")) 
+#lfs.don$ratio_tot=with(lfs.don,welfare/rpcinc_tot)
 lfs.don$logwelfare=log(lfs.don$welfare)
 lfs.don$district=as.factor(lfs.don$district)
-lfs.don$ratio_tot=ifelse(lfs.don$ratio_tot<Inf,lfs.don$ratio_tot,NA)
+#lfs.don$ratio_tot=ifelse(lfs.don$ratio_tot<Inf,lfs.don$ratio_tot,NA)
 
 # Missing values report
 missing_report.don <- lfs.don %>%
@@ -79,16 +74,15 @@ set.seed(1729)  # For reproducibility
 # Step 1: Random hot deck matching based on prcinc_tot, hhsize, and hhb_year
 # -----------------------------
 
-n_sim <- nsim2  # Number of simulations
+#n_sim <- nsim2  # Number of simulations
 n.a = 0.8 #Bootstrap resampling parameter
 
 start_time <- Sys.time()  # Start timer
 #match
 simcons_match=subset(lfs.rec,flag6_income2==0,sel=c(hhid))
+simcons_match_i=subset(lfs.rec,flag6_income2==0,sel=c(hhid))
 
-X.mtc2=c("rpcinc_tot","hhsize","hhb_year")
-
-foreach(sim = 1:n_sim) %do% {
+foreach(sim = 1:nsim2) %do% {
     cat("Simulation ",sim, "\n")
     # Bootstrap the training data
     train_sample <- lfs.don %>%
@@ -105,38 +99,45 @@ foreach(sim = 1:n_sim) %do% {
     
     samp.atemp=as.data.frame(train_sample)
     samp.btemp=as.data.frame(lfs.rec[lfs.rec$flag6_income2==0,])
-    
-    X.mtc2=c("rpcinc_tot","hhsize","hhb_year") # nearest neighbor search variables
-    don.vars2=c("ratio_tot") #variables to be imputed
-    
+
     #Matching using rpcinc_tot and random nearest neighbor distance hot deck (D'Orazio, 2017)
     rnd.2 <- RANDwNND.hotdeck(data.rec=samp.btemp, data.don=samp.atemp,
-                              match.vars=X.mtc2, don.class=group.v,
+                              match.vars=X.mtc2.0, don.class=group.v,
                               dist.fun="Mahalanobis",
                               cut.don="min")
     
     #Create fused dataset
     fA.wrnd <- create.fused(data.rec=samp.btemp, data.don=samp.atemp,
                             mtc.ids=rnd.2$mtc.ids,
-                            z.vars=don.vars2) 
+                            z.vars=don.vars2.0) 
     fA.wrnd$welfare = with(fA.wrnd, ratio_tot*rpcinc_tot)
-    fA.wrnd = fA.wrnd[,c("hhid","welfare")]
-    names(fA.wrnd)[2]=paste("welfare_",sim,sep="")
-    simcons_match=merge(simcons_match,fA.wrnd,by="hhid")
-    rm(samp.atemp,samp.btemp,fA.wrnd,rnd.2)
+    fA.wrnd$y_nl = with(fA.wrnd, share_23*rpcinc_tot)
+    fA.wrnd.c = fA.wrnd[,c("hhid","welfare")]
+    fA.wrnd.i = fA.wrnd[,c("hhid","y_nl")]
+    names(fA.wrnd.c)[2]=paste("welfare_",sim,sep="")
+    names(fA.wrnd.i)[2]=paste("y_nl_",sim,sep="")
+    simcons_match=merge(simcons_match,fA.wrnd.c,by="hhid")
+    simcons_match_i=merge(simcons_match_i,fA.wrnd.i,by="hhid")
+    rm(samp.atemp,samp.btemp,fA.wrnd.c,fA.wrnd.i,rnd.2)
 }
 
 df.match.0=simcons_match
+df.match.0.i=simcons_match_i
 
 df.match.0$welfare_median=apply(df.match.0[,-1],
                               1,median,na.rm=TRUE)
+df.match.0.i$y_nl_median=apply(df.match.0.i[,-1],
+                                1,median,na.rm=TRUE)
 
 lfs.imp.0=merge(lfs.rec[lfs.rec$flag6_income2==0,],
                 df.match.0[,c("hhid","welfare_median")],by="hhid",
                 all.x=TRUE)
+lfs.imp.0=merge(lfs.imp.0,
+                df.match.0.i[,c("hhid","y_nl_median")],by="hhid",
+                all.x=TRUE)
 
 lfs.imp.0 = lfs.imp.0 %>%
-    rename(welfare=welfare_median) %>%
+    rename(welfare=welfare_median,y_nl=y_nl_median) %>%
     mutate(logwelfare=log(welfare))
 
 # # -----------------------------
@@ -250,10 +251,9 @@ registerDoParallel(cl)
 #lfs.don=lfs.imp.0 
 #match
 simcons_match=subset(lfs.rec,flag6_income2==1,sel=c(hhid))
+simcons_match_i=subset(lfs.rec,flag6_income2==1,sel=c(hhid))
 
-X.mtc2=c("ymatch","hhsize","hhb_year")
-n_sim=nsim2
-foreach(sim = 1:n_sim) %do% {
+foreach(sim = 1:nsim2) %do% {
     cat("Simulation ",sim, "\n")
     # Bootstrap the training data
     train_sample <- hies.don %>%   
@@ -332,18 +332,21 @@ foreach(sim = 1:n_sim) %do% {
     
     #Matching using lasso predictions and random nearest neighbor distance hot deck (D'Orazio, 2017)
     rnd.2 <- RANDwNND.hotdeck(data.rec=samp.btemp, data.don=samp.atemp,
-                              match.vars=X.mtc2, don.class=group.v,
+                              match.vars=X.mtc2.1, don.class=group.v,
                               dist.fun="Euclidean",
                               cut.don="min")
     
     #Create fused dataset
     fA.wrnd <- create.fused(data.rec=samp.btemp, data.don=samp.atemp,
                             mtc.ids=rnd.2$mtc.ids,
-                            z.vars="welfare") 
-    fA.wrnd = fA.wrnd[,c("hhid","welfare")]
-    names(fA.wrnd)[2]=paste("welfare_",sim,sep="")
-    simcons_match=merge(simcons_match,fA.wrnd,by="hhid")
-    rm(samp.atemp,samp.btemp,fA.wrnd,rnd.2)
+                            z.vars=don.vars2.1) 
+    fA.wrnd.c = fA.wrnd[,c("hhid","welfare23")]
+    fA.wrnd.i = fA.wrnd[,c("hhid","rnlincpc23")]
+    names(fA.wrnd.c)[2]=paste("welfare_",sim,sep="")
+    names(fA.wrnd.c)[2]=paste("y_nl_",sim,sep="")
+    simcons_match=merge(simcons_match,fA.wrnd.c,by="hhid")
+    simcons_match_i=merge(simcons_match_i,fA.wrnd.i,by="hhid")
+    rm(samp.atemp,samp.btemp,fA.wrnd.c,fA.wrnd.i,rnd.2)
 }
 # Stop the cluster after simulations
 stopCluster(cl)
@@ -354,24 +357,32 @@ time_taken <- end_time - start_time
 cat("Total time for parallel simulation loop:", time_taken, "\n")
 
 df.match.1=simcons_match
+df.match.1.i=simcons_match_i
 
 df.match.1$welfare_median=apply(df.match.1[,-1],
-                              1,median,na.rm=TRUE)
+                                1,median,na.rm=TRUE)
+df.match.1.i$y_nl_median=apply(df.match.1.i[,-1],
+                             1,median,na.rm=TRUE)
 
 lfs.imp.1=merge(lfs.rec[lfs.rec$flag6_income2==1,],
                 df.match.1[,c("hhid","welfare_median")],by="hhid",
                 all.x=TRUE)
+lfs.imp.1=merge(lfs.imp.1,
+                df.match.1.i[,c("hhid","y_nl_median")],by="hhid",
+                all.x=TRUE)
 
 lfs.imp.1 = lfs.imp.1 %>%
-    rename(welfare=welfare_median)
+  rename(welfare=welfare_median,y_nl=y_nl_median) %>%
+  mutate(logwelfare=log(welfare))
+
 
 # Adjustment for imputed welfare, only for HHS w\o income
 # Adjustment factor using real growth of
 # Households and NPISHs final consumption expenditure (constant 2015 US$)
 # WDI: NE.CON.PRVT.KD
 # Factor for 2016= 0.925230578. For 2023=0.960698836
-adj_f=0.960698836
-lfs.imp.1$welfare=lfs.imp.1$welfare*adj_f
+#adj_f=0.960698836
+#lfs.imp.1$welfare=lfs.imp.1$welfare*adj_f
 
 lfs.imp=bind_rows(lfs.imp.0,lfs.imp.1)
 
@@ -391,8 +402,8 @@ tab1=svymean(~pov30+pov42+pov83+povnpl, design=svydf,
 tab1
 
 #write.csv(tab1,file=paste(path,
-       "/Outputs/Main/Tables/Poverty_imputed_2016.csv",sep=""),
-      row.names = FALSE)
+#       "/Outputs/Main/Tables/Poverty_imputed_2016.csv",sep=""),
+#      row.names = FALSE)
 
-#write_dta(lfs.imp,paste(datapath,
-       "/lfs2016_imputed.dta",sep=""))
+write_dta(lfs.imp,paste(datapath,
+       "/lfs2023_imputed_final_so_far.dta",sep=""))

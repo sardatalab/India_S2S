@@ -1,34 +1,28 @@
 # #Graphs and tables
 # 
-# #Bring States names
-# states=read_excel(paste0(datapath,
-#             "cleaned/Stage 1/Cleaned/2022 matching/states.xlsx"))
-# 
-# data.rec2=merge(data.rec2,states,by.x="statenum",by.y="state",all.x=TRUE)
-# data.don=merge(data.don,states,by.x="statenum",by.y="state",all.x=TRUE)
 # #######
 # #######
 
 #Load vector: 
-data.rec2 <- read_dta(paste(datapath,
-                      "cleaned/Stage 1/Final/Imputed_PLFS_22_match.dta",
-                      sep="")) 
-data.don=read_dta(paste(datapath,"cleaned/hies2019_clean.dta",sep="")) 
+#data.rec2 <- read_dta(paste(datapath,
+#                      "cleaned/Stage 1/Final/Imputed_LFS_19_match_share.dta",
+#                      sep="")) 
+#data.don=read_dta(paste(datapath,"cleaned/hies2019_clean.dta",sep="")) 
 #create sequential Ids
-data.don$hidseq=seq(1:nrow(data.don))
-data.don <- data.don %>% 
-    filter(!is.na(welfare))
+#data.don$hidseq=seq(1:nrow(data.don))
+#data.don <- data.don %>% 
+#    filter(!is.na(welfare))
 #hh age squared
-data.don$hh_head_age_sq = with(data.don,age_hhh^2)
+#data.don$hh_head_age_sq = with(data.don,age_hhh^2)
 
 # 2. Subset and add survey identifier
 lfs <- data.rec2 %>%
   filter(!is.na(welfare)) %>%
-  select(district, urban, welfare, popwt) %>%
+  select(district, sector, welfare, popwt) %>%
   mutate(survey = "LFS")
 
 hies <- data.don %>%
-  select(district, urban, welfare, popwt) %>%
+  select(district, sector, welfare, popwt) %>%
   mutate(survey = "HIES")
 
 # 3. Convert any labelled columns to plain numeric.
@@ -94,7 +88,7 @@ ggplot(df_ecdf, aes(x = log(welfare), y = ecdf, color = survey)) +
   geom_step() +
   labs(x = "Log Consumption",
        y = "Density",
-       title = "ECDF of Original and Imputed Log Consumption by survey (2022-23)")+
+       title = "ECDF of Original and Imputed Log Consumption by survey (2019)")+
   geom_vline(xintercept = line300,linetype="dashed",size=0.5)+
   geom_vline(xintercept = line420,linetype="dashed",size=0.5)+
   geom_vline(xintercept = line830,linetype="dashed",size=0.5)+
@@ -127,12 +121,12 @@ tab1=svyby(~pov30+pov42+pov83+povnpl, ~survey, design=svydf, svymean,
 write.csv(tab1,paste(path,
        "/Outputs/Main/Tables/table 2 poverty.csv",sep=""))
 
-#Poverty by area
-tab2=svyby(~pov30+pov42+pov83+povnpl, ~survey+urban, design=svydf, 
+#Poverty by sector
+tab2=svyby(~pov30+pov42+pov83+povnpl, ~survey+sector, design=svydf, 
            svymean,na.rm=TRUE,vartype = "ci")
-tab2$urban=factor(tab2$urban, levels=c(0,1),labels=c("Rural","Urban"))
-tab2 = tab2 %>% rename(Sector=urban)
-tab2
+tab2$sector=factor(tab2$sector, levels=c(1,2,3),labels=c("Urban","Rural","Estate"))
+tab2 = tab2 %>% rename(Sector=sector)
+
 
 means_long <- tab2 %>%
   pivot_longer(
@@ -237,7 +231,7 @@ ggplot(tab3_wide_30, aes(x = hies_rank, y = lfs_rank)) +
     axis.text = element_text(size = 8)   # Reduce axis text size
   )
 ggsave(paste(path,
-             "/Results/2022 matching/State Ranking 3.0.png",sep=""),
+             "/Outputs/Main/Figures/State Ranking 3.0.png",sep=""),
        width = 20, height = 20, units = "cm")
 
 # 4.2 line
@@ -279,7 +273,7 @@ ggplot(tab3_wide_42, aes(x = hies_rank, y = lfs_rank)) +
     axis.text = element_text(size = .5)   # Reduce axis text size
   )
 ggsave(paste(path,
-             "/Results/2022 matching/State Ranking 4.2.png",sep=""),
+             "/Outputs/Main/Figures/State Ranking 4.2.png",sep=""),
        width = 20, height = 20, units = "cm")
 
 
@@ -334,7 +328,7 @@ ggplot(tab3, aes(y = as.factor(district), x = statistic.pov30, fill = survey)) +
   xlim(c(0,40))+
 theme_minimal()
 ggsave(paste(path,
-             "/Results/2022 matching/Poverty State 3.0.png",sep=""),
+             "/Outputs/Main/Figures/Poverty State 3.0.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 tab3$statistic.pov42=100*tab3$statistic.pov42
@@ -353,7 +347,7 @@ ggplot(tab3, aes(
   xlim(c(0,75))+
   theme_minimal()
 ggsave(paste(path,
-             "/Results/2022 matching/Poverty State 4.2 v2.png",sep=""),
+             "/Outputs/Main/Figures/Poverty State 4.2 v2.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 # ggplot(tab3, aes(y = as.factor(district), x = statistic.pov83, fill = survey)) +
@@ -397,10 +391,10 @@ df=lfs.don %>%
 ggplot(df, aes(x = value, weight = popwt,
                fill = group)) +
     geom_density(alpha = 0.4, adjust=1.5) +
-    labs(x = "Log Consumption",
+    labs(x = "Ratio",
          y = "Density",
-         title = "Original and Imputed Log Consumption by Survey (2019)")+
-    xlim(c(0,5))
+         title = "Consumption to labor income ratio (LFS 2019)")+
+    xlim(c(0,10))
 df=lfs.don %>%
     pivot_longer(cols = c("rpcinc_tot","welfare"), names_to = "group", 
                  values_to = "value")
@@ -414,48 +408,36 @@ ggplot(df, aes(x = log(value), weight = popwt,
 
 #Summary stats of ratio
 summary(lfs.don$ratio)
-summary(lfs.don[lfs.don$flag6_income==1,]$ratio) 
+summary(lfs.don[lfs.don$flag6_income==0,]$ratio) 
 
 summary(lfs.don$ratio_tot)
-summary(lfs.don[lfs.don$flag6_income==1,]$ratio_tot) 
+summary(lfs.don[lfs.don$flag6_income==0,]$ratio_tot) 
 #Winsorize bottom and top 1%
-quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,probs=c(0.01,0.05,0.1,0.9,0.95,0.99))
+# quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,probs=c(0.01,0.05,0.1,0.9,0.95,0.99))
+# 
+# lfs.don$ratio=ifelse(lfs.don$ratio>quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.99),
+#                      quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.99),lfs.don$ratio)
+# lfs.don$ratio=ifelse(lfs.don$ratio<quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.01),
+#                      quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.01),lfs.don$ratio)
+# 
+# quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,probs=c(0.01,0.05,0.1,0.9,0.95,0.99))
+# 
+# lfs.don$ratio_tot=ifelse(lfs.don$ratio_tot>quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.99),
+#                      quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.99),lfs.don$ratio_tot)
+# lfs.don$ratio_tot=ifelse(lfs.don$ratio_tot<quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.01),
+#                      quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.01),lfs.don$ratio_tot)
+# 
+# summary(lfs.don[lfs.don$flag6_income==0,]$ratio) 
+# summary(lfs.don[lfs.don$flag6_income==0,]$ratio_tot)
 
-lfs.don$ratio=ifelse(lfs.don$ratio>quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.99),
-                     quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.99),lfs.don$ratio)
-lfs.don$ratio=ifelse(lfs.don$ratio<quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.01),
-                     quantile(lfs.don[lfs.don$ratio<Inf,]$ratio,.01),lfs.don$ratio)
-
-quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,probs=c(0.01,0.05,0.1,0.9,0.95,0.99))
-
-lfs.don$ratio_tot=ifelse(lfs.don$ratio_tot>quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.99),
-                     quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.99),lfs.don$ratio_tot)
-lfs.don$ratio_tot=ifelse(lfs.don$ratio_tot<quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.01),
-                     quantile(lfs.don[lfs.don$ratio_tot<Inf,]$ratio_tot,.01),lfs.don$ratio_tot)
-
-summary(lfs.don[lfs.don$flag6_income==0,]$ratio) 
-summary(lfs.don[lfs.don$flag6_income==0,]$ratio_tot)
-
-df=lfs.don %>%
-    pivot_longer(cols = c("ratio","ratio_tot"), names_to = "group", 
-                 values_to = "value")
-
-ggplot(df, aes(x = value, weight = popwt,
-               fill = group)) +
-    geom_density(alpha = 0.4, adjust=1.5) +
-    labs(x = "Log Consumption",
-         y = "Density",
-         title = "Original and Imputed Log Consumption by Survey (2019)")
-
-summary(lfs.don[lfs.don$flag6_income==1,]$ratio) 
-summary(lfs.don[lfs.don$flag6_income==1,]$ratio_tot) 
 
 #Ratio Density
-lfs.don$quintile=xtile(lfs.don$welfare,n=5,wt=lfs.don$weight)
+lfs.don$quintile=xtile(lfs.don$welfare,n=5,wt=lfs.don$popwt)
 lfs.don$quintile=as.factor(lfs.don$quintile)
 
-#Ridge plot
-ggplot(lfs.don, aes(x = ratio, y = fct_rev(quintile), 
+#Ridge plot of ratio_tot
+lfs.don$ratio_tot=ifelse(lfs.don$ratio_tot<Inf,lfs.don$ratio_tot,NA)
+ggplot(lfs.don, aes(x = ratio_tot, y = fct_rev(quintile), 
                      weight = weight, fill = quintile)) +
   geom_density_ridges(alpha = 0.5, scale = 1.5, rel_min_height = 0.01) +
   labs(x = "Ratio",
@@ -465,36 +447,30 @@ ggplot(lfs.don, aes(x = ratio, y = fct_rev(quintile),
   theme_ridges() + 
   theme(legend.position = "none") 
 ggsave(paste(path,
-             "/Results/2022 matching/Ridgeplot of ratio by quintile.png",sep=""),
+             "/Outputs/Main/Figures/Ridgeplot of ratio by quintile.png",sep=""),
        width = 30, height = 20, units = "cm")
 
-#Ridge plot:ratio_tot
-ggplot(lfs.don, aes(x = ratio_tot, y = fct_rev(quintile), 
+#Ridge plot of non-labor income share_19
+
+ggplot(lfs.don, aes(x = share_19, y = fct_rev(quintile), 
                     weight = weight, fill = quintile)) +
-    geom_density_ridges(alpha = 0.5, scale = 1.5, rel_min_height = 0.01) +
-    labs(x = "ratio_tot",
-         y = "Quintile",
-         title = "Ridgeline Plot of Household Expenditure to Total Labor Income (2019)") +
-    xlim(c(0, 7.5)) +
-    theme_ridges() + 
-    theme(legend.position = "none") 
+  geom_density_ridges(alpha = 0.5, scale = 1.5, rel_min_height = 0.01) +
+  labs(x = "Ratio",
+       y = "Quintile",
+       title = "Ridgeline Plot of Household Expenditure to Labor Income (2019)") +
+  xlim(c(0, 1)) +
+  theme_ridges() + 
+  theme(legend.position = "none") 
 ggsave(paste(path,
-             "/Results/2022 matching/Ridgeplot of ratio_tot by quintile.png",sep=""),
+             "/Outputs/Main/Figures/Ridgeplot of share_19 by quintile.png",sep=""),
        width = 30, height = 20, units = "cm")
-ggplot(df, aes(x = value, weight = popwt,
-               fill = group)) +
-    geom_density(alpha = 0.4, adjust=1.5) +
-    labs(x = "Log Consumption",
-         y = "Density",
-         title = "Original and Imputed Log Consumption by Survey (2019)")+
-    xlim(c(0,5))
 
 #HEATMAP OF DECILES
+lfs.don.0=subset(lfs.don,flag6_income2==0)
+lfs.don.0$decile_welfare=xtile(lfs.don.0$welfare,n=10,wt=lfs.don.0$popwt)
+lfs.don.0$decile_rpcinc=xtile(lfs.don.0$rpcinc_tot,n=10,wt=lfs.don.0$popwt)
 
-lfs.don$decile_welfare=xtile(lfs.don$welfare,n=10,wt=lfs.don$weight)
-lfs.don$decile_rpcinc=xtile(lfs.don$rpcinc1,n=10,wt=lfs.don$weight)
-
-des <- svydesign(ids = ~1, weights = ~weight, data = lfs.don)
+des <- svydesign(ids = ~1, weights = ~popwt, data = lfs.don.0)
 
 #Cross-tabulate weighted counts
 tab <- svytable(~decile_welfare + decile_rpcinc, design = des)
@@ -519,7 +495,41 @@ ggplot(heatmap_data, aes(x = decile_welfare, y = decile_rpcinc, fill = rel_freq)
   ) +
   theme_minimal()
 ggsave(paste(path,
-             "/Results/2022 matching/Heatmap deciles.png",sep=""),
+             "/Outputs/Main/Figures/Heatmap deciles.png",sep=""),
        width = 30, height = 20, units = "cm")
 
+
+
+## Share of non-labor income
+lfs.don$y_nl=with(lfs.don,share_19*rpcinc1)
+summary(lfs.don$y_nl)
+summary(lfs.don$share_19)
+lfs.don$sh_y_nl_cons=with(lfs.don,y_nl/welfare)
+
+data.don$y_nl=with(data.don,sh_ynyl19*rpcinc1)
+summary(data.don$y_nl)
+summary(data.don$sh_ynyl19)
+data.don$sh_y_nl_cons=with(data.don,y_nl/welfare)
+data.don$quintile=xtile(data.don$welfare,n=5,wt=data.don$popwt)
+data.don$quintile=as.factor(data.don$quintile)
+
+
+#Ridge plot of non-labor income to consumption share
+
+ggplot(lfs.don, aes(x = sh_y_nl_cons, y = fct_rev(quintile), 
+                    weight = weight, fill = quintile)) +
+  geom_density_ridges(alpha = 0.5, scale = 1.5, rel_min_height = 0.01) +
+  labs(x = "Ratio",
+       y = "Quintile",
+       title = "Ridgeline Plot of Household Expenditure to Labor Income (2019)") +
+  xlim(c(0, .25)) +
+  theme_ridges() + 
+  theme(legend.position = "none") 
+ggsave(paste(path,
+             "/Outputs/Main/Figures/Ridgeplot Y nl by quintile.png",sep=""),
+       width = 30, height = 20, units = "cm")
+
+
+write_dta(lfs.don,paste(datapath,
+             "cleaned/Stage 1/Final/Imputed_LFS_19_final_at_least_for_now.dta",sep=""))
 

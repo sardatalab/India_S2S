@@ -15,7 +15,7 @@ packages <- c(
   "StatMatch", "survey", "questionr", "reldist", "glmnet", "useful",
   "data.table", "haven", "statar", "parallel", "foreach", "doParallel",
   "dplyr", "tidyr", "dineq", "convey", "renv", "transport", "ggridges",
-  "ggplot2","forcats","scales","readxl","Hmisc"
+  "ggplot2","forcats","scales","readxl","Hmisc","xgboost","matrixStats"
 )
 
 # Install missing packages
@@ -42,10 +42,10 @@ outpath <- "C:/Users/wb553773/WBG/Marta Schoch - Analysis/Out/s2s/"
 # Set global parameters
 
 # Number of simulations stage 1
-nsim1=10
+nsim1=100
 
 # Number of simulations stage 2
-nsim2=20
+nsim2=100
 
 # Resampling parameter stages 1 and 2
 n.a = .9
@@ -54,12 +54,16 @@ n.a = .9
 seed = 1729
 
 # Matching parameters stage 1
-X.mtc1=c("ymatch","hhsize","age_hhh") # nearest neighbor search variables
-don.vars1=c("welfare") #variables to be imputed 
+X.mtc1=c("ymatch","rpcinc1","hhsize","age_hhh") # nearest neighbor search variables
+don.vars1=c("welfare","sh_ynyl19","sh_ynyl23") #variables to be imputed 
 
-# Matching parameters stage 2
-X.mtc2=c("ymatch","hhsize","age_hhh") # nearest neighbor search variables
-don.vars2=c("ratio_tot","welfare") #variables to be imputed
+# Matching parameters stage 2: HHS w income
+X.mtc2.0=c("rpcinc_tot","hhsize","hhb_year") # nearest neighbor search variables
+don.vars2.0=c("ratio_tot","share_23") #variables to be imputed
+
+# Matching parameters stage 2: HHS w/o income
+X.mtc2.1=c("ymatch","hhsize","age_hhh") # nearest neighbor search variables
+don.vars2.1=c("welfare23","rnlincpc23") #variables to be imputed
 
 # Parameters to convert vectors in 2019 prices to 2021 PPP
 cpi21=0.88027848 #this is to convert to 2021PPPs
@@ -83,11 +87,11 @@ geometric_mean <- function(x, na.rm = TRUE) {
 }
 # Run the R scripts
 #Stage 1
-source(file.path(path, "India_S2S/Code/00-Stage 1-Clean.R"))
-source(file.path(path, "India_S2S/Code/01-Stage 1-Simulation.R"))
-source(file.path(path, "India_S2S/Code/02-Stage 1-Ensemble.R"))
-source(file.path(path, "India_S2S/Code/03-Stage 1-Outputs.R"))
-source(file.path(path, "India_S2S/Code/04-Stage 2-Simulation2023-XGB v6.R"))
+source(file.path(path, "Code/00-Stage 1-Clean.R"))
+source(file.path(path, "Code/01-Stage 1-Simulation.R"))
+source(file.path(path, "Code/02-Stage 1-Ensemble.R"))
+source(file.path(path, "Code/03-Stage 1-Outputs.R"))
+source(file.path(path, "Code/04-Stage 2-Simulation2023-XGB v8.R"))
 #source(file.path(path, "India_S2S/Code/04-Stage 2-Simulation2016"))
 
 

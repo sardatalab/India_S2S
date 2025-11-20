@@ -18,7 +18,16 @@ missing_report.rec <- data.rec %>%
                  names_to = "Variable", values_to = "PercentMissing")
 subset(missing_report.rec,PercentMissing>0)
 #based on report, these variables are excluded only when using linear models
-#data.rec=subset(data.rec,sel=-c(sex_ratio))
+data.rec=subset(data.rec,sel=-c(num_agri_emp,
+                                num_indexcons_emp,
+                                num_cons_emp,
+                                num_ind_emp,
+                                num_serv_emp,
+                                num_public_emp,
+                                num_pvt_emp,
+                                num_family_worker,
+                                num_employer,
+                                num_self_emp))
 
 data.rec=na.omit(data.rec)
 
