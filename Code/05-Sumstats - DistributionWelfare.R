@@ -1,60 +1,124 @@
-#lfs: 2019
+#lfs 2019
 lfs19=lfs.don
 lfs19$hhid=NULL
-lfs19=subset(lfs19,select=c(district, urban,popwt,welfare))
-lfs19$survey="LFS_19"
-#2016
+lfs19=subset(lfs19,select=c(urban,popwt,welfare))
+lfs19$survey="LFS_19_imp"
+lfs19$urban=factor(lfs19$urban, levels=c(0,1),labels=c("Rural","Urban"))
+
+#HIES 2019
+hies19 = subset(hies.don,select=c(urban,popwt,welfare))
+hies19$survey="HIES_19"
+hies19$urban=factor(hies19$urban, levels=c(0,1),labels=c("Rural","Urban"))
+
+#lfs 2016
 lfs16.orig=read_dta(paste(datapath,
-                       "lfs2016_imputed.dta",
+                          "/lfs2016_imputed_final_so_far.dta",
                        sep="")) 
-lfs16.orig=subset(lfs16.orig,select=c(district, urban,popwt,welfare))
+lfs16.orig=subset(lfs16.orig,select=c(urban,popwt,welfare))
 lfs16.imp=lfs16.orig
+lfs16.imp$survey="LFS_16_imp"
+lfs16.imp$urban=factor(lfs16.imp$urban, levels=c(0,1),labels=c("Rural","Urban"))
 
-# lfs16.sim=readRDS(paste(datapath,
-#       "cleaned/Stage 2/Final/Simulations_model_match_2016.rds",sep=""))
-# lfs16.sim$welfare=apply(lfs16.sim[,-1],
-#       1,geometric_mean,na.rm=TRUE)
-# lfs16.sim=subset(lfs16.sim,select = c("hhid","welfare"))
-# 
-# lfs16.imp=merge(lfs16.orig,lfs16.sim,by="hhid",
-#               all.x=TRUE)
-lfs16.imp$survey="LFS_16"
-lfs16.imp$district=as.factor(lfs16.imp$district)
+#hies 2016
+hies16=read_dta(paste(datapath,"hies16ppp.dta",sep=""))
+hies16$survey="HIES_16"
+hies16$district=NULL
+hies16=hies16 %>%
+    rename(popwt=weight) %>%
+    mutate(urban=factor(urban, levels=c(0,1),labels=c("Rural","Urban")))
 
-#2023
-
+#lfs 2023
 lfs23.orig=read_dta(paste(datapath,
-                          "lfs2023_imputed.dta",
+                          "lfs2023_imputed_final_so_far.dta",
                           sep="")) 
-lfs23.orig=subset(lfs23.orig,select=c(district, urban,popwt,welfare))
-
+lfs23.orig=subset(lfs23.orig,select=c(urban,popwt,welfare))
 lfs23.imp=lfs23.orig
-# lfs23.sim=readRDS(paste(datapath,
-#                         "cleaned/Stage 2/Final/Simulations_model_match_2023.rds",sep=""))
-# lfs23.sim$welfare=apply(lfs23.sim[,-1],
-#                         1,geometric_mean,na.rm=TRUE)
-# lfs23.sim=subset(lfs23.sim,select = c("hhid","welfare"))
-# 
-# lfs23.imp=merge(lfs23.orig,lfs23.sim,by="hhid",
-#                 all.x=TRUE)
-lfs23.imp$survey="LFS_23"
-lfs23.imp$district=as.factor(lfs23.imp$district)
-
+lfs23.imp$survey="LFS_23_imp"
+lfs23.imp$urban=factor(lfs23.imp$urban, levels=c(0,1),labels=c("Rural","Urban"))
 ###APPEND THREE ROUNDS 
 
-lfs.all=bind_rows(lfs19,lfs16.imp,lfs23.imp)
+lfs.all=bind_rows(lfs19,hies19,lfs16.imp,lfs23.imp)
+lfs.all$welfare=lfs.all$welfare*(12/365)/cpi21/icp21 #convert to 2021 PPP
+
+df=bind_rows(lfs.all,hies16)
+df=na.omit(df)
+
+df$pov30 = ifelse(df$welfare<3,1,0)
+df$pov42 = ifelse(df$welfare<4.2,1,0)
+df$pov83 = ifelse(df$welfare<8.3,1,0)
+
+#Set as survey
+svydf <- svydesign(ids = ~1, data = df, 
+                   weights = ~popwt)
+
+tab1=svyby(~pov30+pov42+pov83, ~survey, design=svydf, svymean,
+           na.rm=TRUE,vartype = "ci")
+
+#Poverty by sector
+tab2=svyby(~pov30+pov42+pov83, ~survey+urban, design=svydf, 
+           svymean,na.rm=TRUE,vartype = "ci")
+
+#Poverty by sector
+means_long <- tab2 %>%
+    pivot_longer(
+        cols = c(pov30, pov42, pov83),
+        names_to = "variable",
+        values_to = "mean"
+    )
+
+# Pivot the lower confidence intervals and clean the variable names
+ci_lower_long <- tab2 %>%
+    pivot_longer(
+        cols = starts_with("ci_l."),
+        names_to = "variable",
+        values_to = "ci_lower"
+    ) %>%
+    mutate(variable = sub("ci_l\\.", "", variable))
+
+# Pivot the upper confidence intervals and clean the variable names
+ci_upper_long <- tab2 %>%
+    pivot_longer(
+        cols = starts_with("ci_u."),
+        names_to = "variable",
+        values_to = "ci_upper"
+    ) %>%
+    mutate(variable = sub("ci_u\\.", "", variable))
+
+# Merge the long data frames by survey, sector, and variable
+plot_data <- means_long %>%
+    left_join(ci_lower_long, by = c("survey", "urban", "variable")) %>%
+    left_join(ci_upper_long, by = c("survey", "urban", "variable"))
+
+# Correct labels in poverty lines
+plot_data$variable=factor(plot_data$variable,
+                          levels=c("pov30","pov42","pov83"),
+                          labels=c("$3.0 PPP21","$4.2 PPP21","$8.3 PPP21"))
+
+plot_data$survey=factor(plot_data$survey,
+      levels=c("HIES_16","LFS_16_imp","HIES_19","LFS_19_imp","LFS_23_imp"),
+      labels=c("HIES_16","LFS_16_imp","HIES_19","LFS_19_imp","LFS_23_imp"))
 
 
-ggplot(lfs.all, aes(x = log(welfare), weight = popwt,
-               color = survey)) +
-    geom_density(alpha = 0.4, adjust=1.5) +
-    labs(x = "Log Consumption",
-         y = "Density",
-         title = "Original and Imputed Log Consumption by Survey (2016-2023)")
+# Create the bar plot with error bars and facet by variable (rows) and area (columns)
+ggplot(plot_data, aes(x = survey, y = mean, fill = survey)) +
+    geom_bar(stat = "identity", width = 0.7, position = position_dodge()) +
+   # geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
+   #                  width = 0.2, 
+   #                  position = position_dodge(width = 0.7)) +
+    geom_text(aes(label = percent(mean, accuracy = 0.1), y = mean/2), 
+              position = position_dodge(width = 0.7),
+              color = "black", size = 3) +
+    facet_grid(variable ~ urban, scales = "free_y") +
+    scale_y_continuous(labels = percent) +
+    labs(
+        x = "Sector",
+        y = "Poverty Rate (%)",
+        title = "Original and Imputed Poverty Rates"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "none")
 
-ggsave(paste(path,
-             "/Outputs/Main/Figures/figure 8a_all.png",sep=""),
-       width = 30, height = 20, units = "cm")
+
 
 #ECDF
 line300 = log(3.0* (365/12)*icp21*cpi21)
@@ -86,6 +150,8 @@ ggsave(paste(path,
        width = 30, height = 20, units = "cm")
 
 
+
+###################################
 hies16=read_dta(paste(datapath,"hies16ppp.dta",sep=""))
 hies16$survey="HIES_16"
 hies16$district=NULL
@@ -99,14 +165,6 @@ lfs16.imp$district=NULL
 df16=bind_rows(hies16,lfs16.imp)
 
 df16=subset(df16,!is.na(popwt))
-
-ggplot(df16, aes(x = log(welfare), weight = popwt,
-                    color = survey)) +
-    geom_density(alpha = 0.4, adjust=1.5) +
-    labs(x = "Log Consumption",
-         y = "Density",
-         title = "Original and Imputed Log Consumption by Survey (2016)")
-
 
 df16_ecdf <- df16 %>%
     group_by(survey) %>%

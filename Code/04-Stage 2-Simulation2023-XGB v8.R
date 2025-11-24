@@ -242,7 +242,7 @@ print(best_params_1)
 
 
 # -----------------------------
-# Step 3: Predictions via PMM in 2016 (HHs w/o income)
+# Step 3: Predictions via PMM in 2023 (HHs w/o income)
 # -----------------------------
 
 n_cores <- parallel::detectCores() - 1
