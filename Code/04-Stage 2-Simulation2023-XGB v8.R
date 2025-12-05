@@ -1,11 +1,11 @@
 # Sames as v6, but training data changed for HHs w/o income (now HIES)
 # Different strategies: First: hot deck random matching between
-# LFS 2019 (donor, trained on HHs with income), and LFS 2016
+# LFS 2019 (donor, trained on HHs with income), and LFS 2023
 # (receiver, HHS with income) using prcinc_tot, hhsize, and hhb_year 
 # to find nearest neighbor
 # Second model: Parallelized Hyperparameter Tuning Loop plus model to 
 # predict welfare via PMM between HIES 2019
-# (donor, trained on HHs w/o income) and 2016 (receiver, HHS w/o income)
+# (donor, trained on HHs w/o income) and 2023 (receiver, HHS w/o income)
 # using ymatch, prcinc_tot, hhsize, and hhb_year to find nearest neighbor
 # Best version as of 11-19-25 at 16:00 pm
 
@@ -13,13 +13,12 @@
 # Inputs:
 # -----------------------------
 # training Data for HHs with income: LFS 2019
-#lfs.don <- read_dta(paste(datapath,
-#        "cleaned/Stage 1/Final/Imputed_LFS_19_final_at_least_for_now.dta.dta",
-#                          sep="")) 
-#lfs.don$ratio_tot=with(lfs.don,welfare/rpcinc_tot)
+lfs.don <- read_dta(paste(datapath,
+        "cleaned/Stage 1/Final/Imputed_LFS_19_final_at_least_for_now.dta",
+                          sep="")) 
 lfs.don$logwelfare=log(lfs.don$welfare)
 lfs.don$district=as.factor(lfs.don$district)
-#lfs.don$ratio_tot=ifelse(lfs.don$ratio_tot<Inf,lfs.don$ratio_tot,NA)
+lfs.don$ratio_tot=ifelse(lfs.don$ratio_tot<Inf,lfs.don$ratio_tot,NA)
 
 # Missing values report
 missing_report.don <- lfs.don %>%
@@ -47,7 +46,7 @@ lfs.rec=read_dta(paste(datapath,
                        sep="")) 
 
 lfs.rec$hhb_year=lfs.rec$hhb_year+2    #check this with Marta
-lfs.rec$district=as.factor(lfs.rec$district)
+lfs.rec$district=as.factor(as.character(lfs.rec$district))
 
 #create sequential IDs
 #lfs.rec$hidseq=seq(1:nrow(lfs.rec))
@@ -83,7 +82,7 @@ simcons_match=subset(lfs.rec,flag6_income2==0,sel=c(hhid))
 simcons_match_i=subset(lfs.rec,flag6_income2==0,sel=c(hhid))
 
 foreach(sim = 1:nsim2) %do% {
-    cat("Simulation ",sim, "\n")
+    cat("Simulation for HHS with labor income: ",sim, "\n")
     # Bootstrap the training data
     train_sample <- lfs.don %>%
         filter(flag6_income2==0) %>%
@@ -254,7 +253,7 @@ simcons_match=subset(lfs.rec,flag6_income2==1,sel=c(hhid))
 simcons_match_i=subset(lfs.rec,flag6_income2==1,sel=c(hhid))
 
 foreach(sim = 1:nsim2) %do% {
-    cat("Simulation ",sim, "\n")
+    cat("Simulation for HHS w/o labor income: ",sim, "\n")
     # Bootstrap the training data
     train_sample <- hies.don %>%   
         filter(flag6_income2==1) %>%
@@ -343,7 +342,7 @@ foreach(sim = 1:nsim2) %do% {
     fA.wrnd.c = fA.wrnd[,c("hhid","welfare23")]
     fA.wrnd.i = fA.wrnd[,c("hhid","rnlincpc23")]
     names(fA.wrnd.c)[2]=paste("welfare_",sim,sep="")
-    names(fA.wrnd.c)[2]=paste("y_nl_",sim,sep="")
+    names(fA.wrnd.i)[2]=paste("y_nl_",sim,sep="")
     simcons_match=merge(simcons_match,fA.wrnd.c,by="hhid")
     simcons_match_i=merge(simcons_match_i,fA.wrnd.i,by="hhid")
     rm(samp.atemp,samp.btemp,fA.wrnd.c,fA.wrnd.i,rnd.2)
@@ -386,9 +385,9 @@ lfs.imp.1 = lfs.imp.1 %>%
 
 lfs.imp=bind_rows(lfs.imp.0,lfs.imp.1)
 
-gini.16=with(lfs.imp,gini.wtd(welfare,popwt))
+gini=with(lfs.imp,gini.wtd(welfare,popwt))
 
-gini.16
+gini
 
 lfs.imp$pov30 = ifelse(lfs.imp$welfare*(12/365)/cpi21/icp21<3,1,0)
 lfs.imp$pov42 = ifelse(lfs.imp$welfare*(12/365)/cpi21/icp21<4.2,1,0)
@@ -405,5 +404,28 @@ tab1
 #       "/Outputs/Main/Tables/Poverty_imputed_2016.csv",sep=""),
 #      row.names = FALSE)
 
-write_dta(lfs.imp,paste(datapath,
-       "/lfs2023_imputed_final_so_far.dta",sep=""))
+#write_dta(lfs.imp,paste(datapath,
+#       "/lfs2023_imputed_final_so_far.dta",sep=""))
+
+#Save simulations
+
+df.match.0$welfare_median=NULL
+df.match.0.i$y_nl_median=NULL
+df.match.1$welfare_median=NULL
+df.match.1.i$y_nl_median=NULL
+
+df.match=bind_rows(df.match.0,df.match.1)
+df.match.i=  bind_rows(df.match.0.i,df.match.1.i)
+
+write.csv(df.match,file=paste(datapath,
+         "cleaned/Stage 2/Final/Simulations_welf_2023_",sim,".csv",sep=""),
+          row.names = FALSE)
+saveRDS(df.match,file=paste(datapath,
+        "cleaned/Stage 2/Final/Simulations_welf_2023_",sim,".rds",sep=""))
+
+
+write.csv(df.match.i,file=paste(datapath,
+        "cleaned/Stage 2/Final/Simulations_ynl_2023_",sim,".csv",sep=""),
+          row.names = FALSE)
+saveRDS(df.match.i,file=paste(datapath,
+        "cleaned/Stage 2/Final/Simulations_ynl_2023_",sim,".rds",sep=""))

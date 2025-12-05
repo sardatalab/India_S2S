@@ -16,7 +16,8 @@ packages <- c(
   "StatMatch", "survey", "questionr", "reldist", "glmnet", "useful",
   "data.table", "haven", "statar", "parallel", "foreach", "doParallel",
   "dplyr", "tidyr", "dineq", "convey", "renv", "transport", "ggridges",
-  "ggplot2","forcats","scales","readxl","Hmisc","xgboost","matrixStats"
+  "ggplot2","forcats","scales","readxl","Hmisc","xgboost","matrixStats",
+  "ggh4x"
 )
 
 # Install missing packages

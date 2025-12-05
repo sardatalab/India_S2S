@@ -85,7 +85,7 @@ simcons_match=subset(lfs.rec,flag6_income2==0,sel=c(hhid))
 simcons_match_i=subset(lfs.rec,flag6_income2==0,sel=c(hhid))
 
 foreach(sim = 1:nsim2) %do% {
-    cat("Simulation ",sim, "\n")
+    cat("Simulation for HHS with labor income: ",sim, "\n")
     # Bootstrap the training data
     train_sample <- lfs.don %>%
         filter(flag6_income2==0) %>%
@@ -258,7 +258,7 @@ simcons_match=subset(lfs.rec,flag6_income2==1,sel=c(hhid))
 simcons_match_i=subset(lfs.rec,flag6_income2==1,sel=c(hhid))
 
 foreach(sim = 1:nsim2) %do% {
-    cat("Simulation ",sim, "\n")
+    cat("Simulation for HHS w/o labor income: ",sim, "\n")
     # Bootstrap the training data
     train_sample <- hies.don %>%   
         filter(flag6_income2==1) %>%
@@ -347,7 +347,7 @@ foreach(sim = 1:nsim2) %do% {
     fA.wrnd.c = fA.wrnd[,c("hhid","welfare")]
     fA.wrnd.i = fA.wrnd[,c("hhid","rnlincpc19")]
     names(fA.wrnd.c)[2]=paste("welfare_",sim,sep="")
-    names(fA.wrnd.c)[2]=paste("y_nl_",sim,sep="")
+    names(fA.wrnd.i)[2]=paste("y_nl_",sim,sep="")
     simcons_match=merge(simcons_match,fA.wrnd.c,by="hhid")
     simcons_match_i=merge(simcons_match_i,fA.wrnd.i,by="hhid")
     rm(samp.atemp,samp.btemp,fA.wrnd.c,fA.wrnd.i,rnd.2)
@@ -410,5 +410,29 @@ tab1
 #       "/Outputs/Main/Tables/Poverty_imputed_2016.csv",sep=""),
 #      row.names = FALSE)
 
-write_dta(lfs.imp,paste(datapath,
-       "/lfs2016_imputed_final_so_far.dta",sep=""))
+#write_dta(lfs.imp,paste(datapath,
+#       "/lfs2016_imputed_final_so_far.dta",sep=""))
+
+
+#Save simulations
+
+df.match.0$welfare_median=NULL
+df.match.0.i$y_nl_median=NULL
+df.match.1$welfare_median=NULL
+df.match.1.i$y_nl_median=NULL
+
+df.match=bind_rows(df.match.0,df.match.1)
+df.match.i=  bind_rows(df.match.0.i,df.match.1.i)
+
+write.csv(df.match,file=paste(datapath,
+                              "cleaned/Stage 2/Final/Simulations_welf_2016_",sim,".csv",sep=""),
+          row.names = FALSE)
+saveRDS(df.match,file=paste(datapath,
+                            "cleaned/Stage 2/Final/Simulations_welf_2016_",sim,".rds",sep=""))
+
+
+write.csv(df.match.i,file=paste(datapath,
+                                "cleaned/Stage 2/Final/Simulations_ynl_2016_",sim,".csv",sep=""),
+          row.names = FALSE)
+saveRDS(df.match.i,file=paste(datapath,
+                              "cleaned/Stage 2/Final/Simulations_ynl_2016_",sim,".rds",sep=""))

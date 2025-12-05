@@ -53,13 +53,23 @@ svydf <- svydesign(ids = ~1, data = df,
 
 tab1=svyby(~pov30+pov42+pov83, ~survey, design=svydf, svymean,
            na.rm=TRUE,vartype = "ci")
+tab1$urban="National"
+write.csv(tab1,paste(path,
+     "/Outputs/Main/Tables/Poverty 2016 2023 national.csv",sep=""),
+     row.names = FALSE)
 
 #Poverty by sector
 tab2=svyby(~pov30+pov42+pov83, ~survey+urban, design=svydf, 
            svymean,na.rm=TRUE,vartype = "ci")
 
+write.csv(tab2,paste(path,
+      "/Outputs/Main/Tables/Poverty 2016 2023.csv",sep=""),row.names = FALSE)
+
+tab_all=bind_rows(tab1,tab2)
+
+
 #Poverty by sector
-means_long <- tab2 %>%
+means_long <- tab_all %>%
     pivot_longer(
         cols = c(pov30, pov42, pov83),
         names_to = "variable",
@@ -67,7 +77,7 @@ means_long <- tab2 %>%
     )
 
 # Pivot the lower confidence intervals and clean the variable names
-ci_lower_long <- tab2 %>%
+ci_lower_long <- tab_all %>%
     pivot_longer(
         cols = starts_with("ci_l."),
         names_to = "variable",
@@ -76,7 +86,7 @@ ci_lower_long <- tab2 %>%
     mutate(variable = sub("ci_l\\.", "", variable))
 
 # Pivot the upper confidence intervals and clean the variable names
-ci_upper_long <- tab2 %>%
+ci_upper_long <- tab_all %>%
     pivot_longer(
         cols = starts_with("ci_u."),
         names_to = "variable",
@@ -100,11 +110,13 @@ plot_data$survey=factor(plot_data$survey,
 
 
 # Create the bar plot with error bars and facet by variable (rows) and area (columns)
-ggplot(plot_data, aes(x = survey, y = mean, fill = survey)) +
+ggplot(subset(plot_data,survey=="HIES_16" |
+                survey=="HIES_19" | survey=="LFS_23_imp"), 
+       aes(x = survey, y = mean, fill = survey)) +
     geom_bar(stat = "identity", width = 0.7, position = position_dodge()) +
-   # geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
-   #                  width = 0.2, 
-   #                  position = position_dodge(width = 0.7)) +
+   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
+                     width = 0.2, 
+                     position = position_dodge(width = 0.7)) +
     geom_text(aes(label = percent(mean, accuracy = 0.1), y = mean/2), 
               position = position_dodge(width = 0.7),
               color = "black", size = 3) +
@@ -113,19 +125,24 @@ ggplot(plot_data, aes(x = survey, y = mean, fill = survey)) +
     labs(
         x = "Sector",
         y = "Poverty Rate (%)",
-        title = "Original and Imputed Poverty Rates"
+        title = "Original and Imputed Poverty Rates (95% CI)"
     ) +
     theme_minimal() +
-    theme(legend.position = "none")
+    theme(legend.position = "none", panel.grid.major = element_blank())
+
+ggsave(paste(path,
+             "/Outputs/Main/Figures/poverty rates hies lfs 16 - 23 CI.png",sep=""),
+       width = 30, height = 20, units = "cm")
+
 
 
 
 #ECDF
-line300 = log(3.0* (365/12)*icp21*cpi21)
-line420 = log(4.2* (365/12)*icp21*cpi21)
-line830 = log(8.3* (365/12)*icp21*cpi21)
+line300 = log(3.0)
+line420 = log(4.2)
+line830 = log(8.3)
 
-df_ecdf <- lfs.all %>%
+df_ecdf <- subset(df,survey=="HIES_16" | survey=="LFS_16_imp" ) %>%
     group_by(survey) %>%
     arrange(log_consumption = log(welfare)) %>%
     mutate(cum_weight = cumsum(popwt),
@@ -137,51 +154,17 @@ ggplot(df_ecdf, aes(x = log(welfare), y = ecdf, color = survey)) +
     geom_step() +
     labs(x = "Log Consumption",
          y = "Density",
-         title = "ECDF of Imputed Log Consumption by survey (2016-23)")+
+         title = "ECDF of Official and Imputed Log Consumption (2016)")+
     geom_vline(xintercept = line300,linetype="dashed",size=0.5)+
     geom_vline(xintercept = line420,linetype="dashed",size=0.5)+
     geom_vline(xintercept = line830,linetype="dashed",size=0.5)+
-    annotate("text", x = line300, y = 0, label = "3.0", vjust = 1.5,size=1)+
-    annotate("text", x = line420, y = 0, label = "4.2", vjust = 1.5,size=1)+
-    annotate("text", x = line830, y = 0, label = "8.3", vjust = 1.5,size=1)
+    annotate("text", x = line300, y = 0, label = "3.0", vjust = 1.5,size=2.5)+
+    annotate("text", x = line420, y = 0, label = "4.2", vjust = 1.5,size=2.5)+
+    annotate("text", x = line830, y = 0, label = "8.3", vjust = 1.5,size=2.5)
 
 ggsave(paste(path,
-             "/Outputs/Main/Figures/ecdf_all.png",sep=""),
+             "/Outputs/Main/Figures/ecdf_hies lfs 19.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 
 
-###################################
-hies16=read_dta(paste(datapath,"hies16ppp.dta",sep=""))
-hies16$survey="HIES_16"
-hies16$district=NULL
-hies16=hies16 %>%
-    rename(popwt=weight)
-
-lfs16.imp$welfare=with(lfs16.imp,welfare*(12/365)/cpi21/icp21)
-lfs16.imp$district=NULL
-
-
-df16=bind_rows(hies16,lfs16.imp)
-
-df16=subset(df16,!is.na(popwt))
-
-df16_ecdf <- df16 %>%
-    group_by(survey) %>%
-    arrange(log_consumption = log(welfare)) %>%
-    mutate(cum_weight = cumsum(popwt),
-           total_weight = sum(popwt),
-           ecdf = cum_weight / total_weight)
-
-
-ggplot(df16_ecdf, aes(x = log(welfare), y = ecdf, color = survey)) +
-    geom_step() +
-    labs(x = "Log Consumption",
-         y = "Density",
-         title = "ECDF of Imputed Log Consumption by survey (2016)")+
-    geom_vline(xintercept = 3,linetype="dashed",size=0.5)+
-    geom_vline(xintercept = 4.2,linetype="dashed",size=0.5)+
-    geom_vline(xintercept = 8.3,linetype="dashed",size=0.5)+
-    annotate("text", x = 3, y = 0, label = "3.0", vjust = 1.5,size=1)+
-    annotate("text", x = 4.2, y = 0, label = "4.2", vjust = 1.5,size=1)+
-    annotate("text", x = 8.3, y = 0, label = "8.3", vjust = 1.5,size=1)
