@@ -41,7 +41,7 @@ lapply(packages, require, character.only = TRUE)
 
 # Set paths
 path <- "C:/Users/wb553773/GitHub/India_S2S"
-datapath <- "C:/Users/wb553773/WBG/Nishtha Kochhar - INDDATA/S2S imputations_CES_LFS/Reproducibility package"
+datapath <- "C:/Users/wb553773/OneDrive - WBG/Stats Team/IND S2S imputation/Reproducibility package"
 
 # Set global parameters
 
