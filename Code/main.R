@@ -16,7 +16,7 @@ packages <- c(
   "data.table", "haven", "statar", "parallel", "foreach", "doParallel",
   "dplyr", "tidyr", "dineq", "convey", "renv", "transport", "ggridges",
   "ggplot2","forcats","scales","readxl","Hmisc","viridis","ggh4x","patchwork",
-  "GGally"
+  "GGally","MatchIt"
 )
 
 # CRAN mirror (optional but recommended)

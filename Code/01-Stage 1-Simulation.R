@@ -1,12 +1,9 @@
 ### This code requires the harmonized HCES and PLFS 2022 data sets. Implements
 ### S2S using Lasso-based PMM constrained by state and household type
 ### and uses Mahalanobis distance to find the nearest neighbor.
+### This version uses MatchIt and a caliper of +-2 deciles away between
+### donor (MMRP deciles) and receiver (abbreviated cons deciles) households
 
-
-# parallel set
-numCores <- detectCores()
-cl <- makeCluster(numCores-1)
-registerDoParallel(cl)
 
 #####Define custom functions####
 
@@ -173,25 +170,72 @@ formula.mod.b <- as.formula(paste("consumption_pc ~",
   row.names(samp.btemp)=as.character(seq(1:nrow(samp.btemp)))
   row.names(samp.atemp)=as.character(seq(1:nrow(samp.atemp)))
 
-  #Matching using lasso predictions and random nearest neighbor distance hot deck (D'Orazio, 2017)
-  rnd.2 <- RANDwNND.hotdeck(data.rec=samp.btemp, data.don=samp.atemp,
-                            match.vars=X.mtc, don.class=group.v,
-                            dist.fun="Mahalanobis",
-                            cut.don="min")
+  #MatchIt NN matching with Mahalanobis + exact matching + decile caliper (+/-2) ---
   
-  #Create fused dataset
-  fA.wrnd <- create.fused(data.rec=samp.btemp, data.don=samp.atemp,
-                          mtc.ids=rnd.2$mtc.ids,
-                          z.vars=don.vars)  
+  # Columns needed for matching + extracting donor welfare
+  need_cols <- c(
+    "hhid", "state", "hh_type", "urb",
+    "ymatch", "hh_size", "hh_head_age",
+    "dec_welfare",         
+    "mpce_sp_def_ind"    
+  )
+  
+  # Keep only needed columns and create any missing ones
+  rec <- as.data.frame(samp.btemp)
+  don <- as.data.frame(samp.atemp)
+  
+  for (v in need_cols) {
+    if (!v %in% names(rec)) rec[[v]] <- NA
+    if (!v %in% names(don)) don[[v]] <- NA
+  }
+  
+  rec <- rec[, need_cols, drop = FALSE]; rec$S <- 1L
+  don <- don[, need_cols, drop = FALSE]; don$S <- 0L
+  
+  stack <- rbind(rec, don)
+  
+  # Stable numeric row id for extracting matches
+  stack$.__rid__ <- seq_len(nrow(stack))
+  row.names(stack) <- as.character(stack$.__rid__)
+  
+  
+  
+  # Exact matching formula consistent with your group.v selection
+  exact_formula <- if (identical(group.v, c("state","hh_type"))) {
+    ~ state + hh_type
+  } else {
+    ~ state + urb
+  }
+  
+  # Nearest-neighbor with Mahalanobis on (ymatch, hh_size, hh_head_age)
+  # plus decile caliper on precomputed dec_welfare
+  m.out <- matchit(
+    S ~ ymatch + hh_size + hh_head_age,
+    data     = stack,
+    method   = "nearest",
+    distance = "mahalanobis",
+    exact    = exact_formula,
+    caliper  = c(dec_welfare = 2),
+    replace  = TRUE
+  )
+  
+  # Extract the matched donor for each receiver
+  mm <- m.out$match.matrix          # rows = treated (S==1), cols = matched controls
+  treated_idx <- as.integer(rownames(mm))
+  donor_idx   <- as.integer(mm[, 1])
+  
+  # Create "fused" output: receiver hhid + donor mpce_sp_def_ind
+  fA.wrnd <- data.frame(
+    hhid = stack$hhid[treated_idx],
+    mpce_sp_def_ind = stack$mpce_sp_def_ind[donor_idx]
+  )
+  
   fA.wrnd = fA.wrnd[,c("hhid","mpce_sp_def_ind")]
   names(fA.wrnd)[2]=paste("mpce_sp_def_ind_",j,sep="")
   simcons_match=merge(simcons_match,fA.wrnd,by="hhid")
-  rm(samp.atemp,samp.btemp,fA.wrnd,rnd.2)
+  rm(samp.atemp,samp.btemp,fA.wrnd)
   }
 
-stopCluster(cl)
-  
-  
 #save simulations results
 #R-squared
 write.csv(r2,file=paste(datapath,

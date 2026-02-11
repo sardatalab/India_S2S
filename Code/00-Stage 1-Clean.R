@@ -71,6 +71,30 @@ missing_report.don <- data.don %>%
 subset(missing_report.don,PercentMissing>0)
 
 
+# ============================================================
+# Pre-calculate weighted within-state deciles 
+# Donors (HCES): mpce_sp_def_ind  (MMRP consumption)
+# Receivers (PLFS): consumption_pc_adj (abbreviated consumption)
+# ============================================================
+
+wgt_don <- "pop_wgt"  
+wgt_rec <- "pop_wgt"  
+
+# Donor deciles within each state
+data.don <- data.don %>%
+  group_by(state) %>%
+  mutate(dec_welfare = statar::xtile(mpce_sp_def_ind, 
+                                     n = 10, wt = .data[[wgt_don]])) %>%
+  ungroup()
+
+# Receiver deciles within each state (weighted)
+data.rec <- data.rec %>%
+  group_by(state) %>%
+  mutate(dec_welfare = statar::xtile(consumption_pc, 
+                                     n = 10, wt = .data[[wgt_rec]])) %>%
+  ungroup()
+
+
 ### Load Excel file with states names
 states=read_excel(paste0(datapath,
                          "/Data/Stage 1/Cleaned/states.xlsx"))
