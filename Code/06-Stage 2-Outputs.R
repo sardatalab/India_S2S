@@ -200,17 +200,17 @@ pov_results <- foreach (year = years, .combine = "rbind",
   data.rec$pop_wgt = with(data.rec,weight*hh_size)
   data.rec = subset(data.rec,!is.na(consumption_pc_adj) & !is.na(pop_wgt))
   #poverty with intl lines
-  data.rec$povlic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<lic,1,0)
-  data.rec$povlmic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<lmic,1,0)
-  data.rec$povumic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<umic,1,0)
+  data.rec$povlic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<lic,1,0)
+  data.rec$povlmic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<lmic,1,0)
+  data.rec$povumic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<umic,1,0)
   
   #poverty with equivalent lines
   lic_end=q_vals[1] #lic equivalent line
   lmic_end=q_vals[2] #lmic equivalent line
   umic_end=q_vals[3] #umic equivalent line
-  data.rec$povlic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<lic_end,1,0)
-  data.rec$povlmic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<lmic_end,1,0)
-  data.rec$povumic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<umic_end,1,0)
+  data.rec$povlic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<lic_end,1,0)
+  data.rec$povlmic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<lmic_end,1,0)
+  data.rec$povumic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<umic_end,1,0)
   
   svydf <- svydesign(ids = ~hhid, data = data.rec, strata= ~strata, 
                                              weights = ~pop_wgt)
@@ -285,17 +285,17 @@ pov_results_sec <- foreach (year = years, .combine = "rbind",
   data.rec$pop_wgt = with(data.rec,weight*hh_size)
   data.rec = subset(data.rec,!is.na(consumption_pc_adj) & !is.na(pop_wgt))
 
-  data.rec$povlic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<lic,1,0)
-  data.rec$povlmic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<lmic,1,0)
-  data.rec$povumic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<umic,1,0)
+  data.rec$povlic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<lic,1,0)
+  data.rec$povlmic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<lmic,1,0)
+  data.rec$povumic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<umic,1,0)
                           
   #poverty with equivalent lines
   lic_end=q_vals[1] #lic equivalent line
   lmic_end=q_vals[2] #lmic equivalent line
   umic_end=q_vals[3] #umic equivalent line
-  data.rec$povlic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<lic_end,1,0)
-  data.rec$povlmic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<lmic_end,1,0)
-  data.rec$povumic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<umic_end,1,0)
+  data.rec$povlic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<lic_end,1,0)
+  data.rec$povlmic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<lmic_end,1,0)
+  data.rec$povumic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<umic_end,1,0)
                           
   svydf <- svydesign(ids = ~hhid, data = data.rec, strata= ~strata, 
                                              weights = ~pop_wgt)
@@ -342,7 +342,7 @@ write.csv(pov_results,file=paste(path,
         "/Outputs/Intermediate/Poverty_trends_only_PLFS_sector.csv",sep=""))
 
 
-#First plot: intl linea
+#First plot: intl line
 p1 <- ggplot(pov_results_sec, aes(x = year, y = international, color = line)) +
   geom_line(size = 1) +
   geom_text(aes(label = sprintf("%.1f", international)),
