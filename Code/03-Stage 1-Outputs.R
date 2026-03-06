@@ -2,119 +2,42 @@
 
 ####Figure 3####
 
-#2022 HCES official and PLFS abbreviated consumption density plot
+#2023 HCES official and PLFS abbreviated consumption density plot
 plfs=read_dta(paste0(datapath,
-     "/Data/Stage 2/Cleaned/IND_2022_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta"))
-plfs.imp=subset(data.rec2,select=c(hhid,shr_clothing_plfs,shr_clothing_hces,mpce_sp_def_ind))
-plfs=merge(plfs,plfs.imp,all.x = TRUE, by="hhid")
+                     "/Data/Stage 2/Cleaned/IND_2023_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta"))
 plfs$survey="PLFS"
 plfs = plfs %>%
-  mutate(delta=(shr_clothing_hces*mpce_sp_def_ind)/(shr_clothing_plfs*consumption_pc_adj)-1,
-         delta=ifelse(delta<Inf,delta,0),
-         delta=ifelse(delta<0,0,delta),
-         delta=ifelse(delta>1,1,delta),
-         consumption_pc_adj_resc=consumption_pc_adj*(1-shr_clothing*delta/(1+delta)),
-         log_consumption_pc_adj_resc = log(consumption_pc_adj_resc+1),
-         log_consumption_pc_adj = log(consumption_pc_adj+1),
+  mutate(log_consumption_pc_adj = log(consumption_pc_adj),
          weight=weight*hh_size) %>%
-  rename(welfare=consumption_pc_adj)
-
-plfs.resc = plfs %>%
-  select(consumption_pc_adj_resc,weight) %>%
-  mutate(survey="PLFS_resc") %>%
-  rename(welfare = consumption_pc_adj_resc)
+  rename(welfare=log_consumption_pc_adj)
 
 hces=read_dta(paste0(datapath,
-          "/Data/Stage 1/Cleaned/HCES22_s2s.dta"))
+                     "/Data/Stage 1/Cleaned/HCES23_s2s.dta"))
 hces$survey="HCES"
 hces = hces %>%
-  rename(welfare=mpce_sp_def_ind, weight=pop_wgt)
-  
-df=rbind(subset(hces,select=c(survey,welfare,weight)),
-         subset(plfs,select=c(survey,welfare,weight)),plfs.resc)
+  rename(welfare=mpce_sp_def_ind, weight=pop_wgt) %>%
+  mutate(welfare=log(welfare))
 
-ggplot(na.omit(df), aes(x = log(welfare+1), weight = weight,
+df=rbind(subset(hces,select=c(survey,welfare,weight)),
+         subset(plfs,select=c(survey,welfare,weight)))
+
+ggplot(na.omit(df), aes(x = welfare, weight = weight,
                         fill = survey)) +
   geom_density(alpha = 0.4, adjust=1.5) +
-  labs(x = "Log Consumption (2022 prices, spatially adjusted)",
+  labs(x = "Log Consumption (2023 prices, spatially adjusted)",
        y = "Density",
-       title = "Official (HCES) and Abbreviated (PLFS, actual and rescaled) Log Consumption Aggregate (2022-23)")+
-  xlim(c(6,11))
+       title = "Official (HCES) and Abbreviated (PLFS) Log Consumption Aggregate (2023-24)")
 
 ggsave(paste(path,
              "/Outputs/Main/Figures/Figure 3.png",sep=""),
        width = 20, height = 10, units = "cm")
-
-
-####Figure 3 ECDF####
-
-df_ecdf <- na.omit(df) %>%
-  group_by(survey) %>%
-  arrange(welfare=log(welfare+1)) %>%
-  mutate(cum_weight = cumsum(weight),
-         total_weight = sum(weight),
-         ecdf = cum_weight / total_weight)
-
-
-ggplot(df_ecdf, aes(x = log(welfare+1), y = ecdf, color = survey)) +
-  geom_step() +
-  labs(x = "Log Consumption",
-       y = "Density",
-       title = "Official (HCES) and Abbreviated (PLFS, actual and rescaled) Log Consumption Aggregate (2022-23)")+
-  xlim(c(6,11))
-  
-ggsave(paste(path,
-             "/Outputs/Main/Figures/Figure 3 ecdf.png",sep=""),
-       width = 20, height = 10, units = "cm")
-
-rm(plfs,hces,plfs.imp,plfs.resc,df,df_ecdf)
-
-####Figure unnumbered for Annex ####
-####Delta and Share of Clothing###
-df <- plfs %>%
-  mutate(
-    decile = xtile(welfare, w = weight, n = 10)
-  )
-
-decile_stats <- df %>%
-  filter(!is.na(decile)) %>%
-  group_by(decile) %>%
-  dplyr::summarize(
-    w_mean_delta = wtd.mean(delta, weight, na.rm = TRUE),
-    w_median_delta = Hmisc::wtd.quantile(delta, weight,probs=0.5,na.rm = TRUE),
-    w_mean_share = wtd.mean(shr_clothing_plfs, weight, na.rm = TRUE),
-    w_median_share = Hmisc::wtd.quantile(shr_clothing_plfs,probs=0.5, weight,na.rm = TRUE)
-  )
-
-decile_stats_long_delta <- decile_stats %>%
-  tidyr::pivot_longer(
-    cols = c(w_mean_delta,  w_mean_share),
-    names_to = "stat",
-    values_to = "value"
-  )
-
-ggplot(decile_stats_long_delta, aes(x = decile, y = value, color = stat)) +
-  geom_line(size = 1.2) +
-  geom_point() +
-  scale_x_continuous(breaks = 1:10) +
-  labs(
-    x = "Decile of abbreviated consumption",
-    y = "Delta / Share of Clothing & Footwear",
-    color = "",
-    title = "Delta and Share of Clothing & Footwear Across Deciles"
-  ) +
-  theme_minimal()
-
-ggsave(paste(path,
-             "/Outputs/Main/Figures/Figure X delta and share clothing.png",sep=""),
-       width = 20, height = 10, units = "cm")
-rm(plfs,hces,plfs.imp,plfs.resc,df,df_ecdf,decile_stats_long_delta, decile_stats)
+rm(plfs,hces)
 
 ####Figure 4####
-years <- c(2017:2022)
+years <- c(2017:2023)
 for (year in years) {
   plfs.rec=read_dta(paste(datapath,
-             "/Data/Stage 2/Cleaned/IND_",year,"_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",sep="")) 
+                          "/Data/Stage 2/Cleaned/IND_",year,"_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",sep="")) 
   plfs.rec$log_labor_pc_adj=log(plfs.rec$total_labor_pc_adj+1)
   plfs.rec$log_consumption_pc_adj=log(plfs.rec$consumption_pc_adj+1)
   plfs.rec$pop_wgt=with(plfs.rec,weight*hh_size)
@@ -127,8 +50,8 @@ survey_list <- list(
   "2019" = data2019,
   "2020" = data2020,
   "2021" = data2021,
-  "2022" = data2022
-  #"2023" = data2023
+  "2022" = data2022,
+  "2023" = data2023
 )
 
 # Define all variables to keep
@@ -190,7 +113,7 @@ ggplot(combined_data, aes(
   ) +
   scale_fill_viridis_d(guide = "none") +
   labs(
-    x = "Log Consumption (abbreviated, 2022 prices, spatially adjusted, rescaled-delta)",
+    x = "Log Consumption (abbreviated, 2022 prices, spatially adjusted)",
     y = "Year",
     title = "Log Abbreviated Consumption Density and Median by Sector and Year"
   ) +
@@ -202,10 +125,11 @@ ggplot(combined_data, aes(
     legend.position = "right"
   )
 ggsave(paste(path,
-         "/Outputs/Main/Figures/Figure 4.png",sep=""),
+             "/Outputs/Main/Figures/Figure 4.png",sep=""),
        width = 25, height = 15, units = "cm")
 
-
+#CHECK TEMPORAL ADJUSTMENT ON INCOMES IN PREVIOUS ROUNDS, IT SHOULD BE
+#UPDATED TO USE 2023 PRICES
 
 ####Figure 6 and Table A 1####
 
@@ -253,7 +177,7 @@ ggsave(paste(path,
        width = 25, height = 15, units = "cm")
 
 rm(combined_data,data2017,data2018,data2019,
-   data2020,data2021,data2022)
+   data2020,data2021,data2022,data2023)
 
 ####Table A 1####
 
@@ -268,8 +192,8 @@ weighted_means_wide <- weighted_means_long %>%
   arrange(desc(variable))
 
 write.csv(weighted_means_wide,paste(path,
-        "/Outputs/Annex/Tables/table A 1.csv",sep=""),
-        row.names = FALSE)
+                                    "/Outputs/Annex/Tables/table A 1.csv",sep=""),
+          row.names = FALSE)
 
 
 ####Figure 7####
@@ -295,7 +219,7 @@ coefs_summary <- t(apply(coefs, 1, function(x) {
 }))
 
 write.csv(coefs_summary[-2,],paste(path,
-       "/Outputs/Main/Tables/table 1.csv",sep=""),
+                                   "/Outputs/Main/Tables/table 1.csv",sep=""),
           row.names = TRUE)
 
 ##############################
@@ -354,7 +278,7 @@ ggplot(df, aes(x = log(mpce_sp_def_ind), weight = pop_wgt,
   geom_density(alpha = 0.4, adjust=1.5) +
   labs(x = "Log Consumption",
        y = "Density",
-       title = "Original and Imputed Log Consumption by Survey (2022-23)")
+       title = "Original and Imputed Log Consumption by Survey (2023-24)")
 
 ggsave(paste(path,
              "/Outputs/Main/Figures/figure 8a.png",sep=""),
@@ -388,7 +312,7 @@ ggplot(df_ecdf, aes(x = log(mpce_sp_def_ind), y = ecdf, color = survey)) +
   annotate("text", x = lineumic, y = 0, label = "8.3", vjust = 1.5,size=1)
 
 ggsave(paste(path,
-        "/Outputs/Main/Figures/figure 8b.png",sep=""),
+             "/Outputs/Main/Figures/figure 8b.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 
@@ -396,13 +320,13 @@ ggsave(paste(path,
 
 #Gini coefficient
 gini1= gini.wtd(df[df$survey=="HCES",]$mpce_sp_def_ind,
-         df[df$survey=="HCES",]$pop_wgt)
+                df[df$survey=="HCES",]$pop_wgt)
 
 gini2 = gini.wtd(df[df$survey=="PLFS",]$mpce_sp_def_ind,
-         df[df$survey=="PLFS",]$pop_wgt)
+                 df[df$survey=="PLFS",]$pop_wgt)
 tab = data.frame(survey=c("HCES","PLFS"),gini=c(gini1,gini2))
 write.csv(tab,paste(path,
-   "/Outputs/Main/Tables/table 2 gini.csv",sep=""))
+                    "/Outputs/Main/Tables/table 2 gini.csv",sep=""))
 
 
 #Overall Poverty
@@ -410,7 +334,7 @@ tab1=svyby(~povlic+povlmic+povumic, ~survey, design=svydf, svymean,
            na.rm=TRUE,vartype = "ci")
 
 write.csv(tab1,paste(path,
-       "/Outputs/Main/Tables/table 2 poverty.csv",sep=""))
+                     "/Outputs/Main/Tables/table 2 poverty.csv",sep=""))
 
 ### Figure 10####
 
@@ -453,8 +377,8 @@ plot_data <- means_long %>%
 
 # Correct labels in poverty lines
 plot_data$variable=factor(plot_data$variable,
-                levels=c("povlic","povlmic","povumic"),
-                labels=c("$3.0 PPP21","$4.2 PPP21","$8.3 PPP21"))
+                          levels=c("povlic","povlmic","povumic"),
+                          labels=c("$3.0 PPP21","$4.2 PPP21","$8.3 PPP21"))
 
 # Create the bar plot with error bars and facet by variable (rows) and area (columns)
 ggplot(plot_data, aes(x = survey, y = mean, fill = survey)) +
@@ -496,7 +420,7 @@ tab3_wide_lic$Diff=with(tab3_wide_lic,PLFS-HCES)
 
 #save table
 write.csv(tab3_wide_lic,paste(path,
-       "/Outputs/Intermediate/state_pov_lic_w.csv",sep=""))
+                              "/Outputs/Intermediate/state_pov_lic_w.csv",sep=""))
 
 #ranking plot
 tab3_wide_lic <- tab3_wide_lic %>%
@@ -542,7 +466,7 @@ tab3_wide_lmic$PLFS=100*tab3_wide_lmic$PLFS
 tab3_wide_lmic$Diff=with(tab3_wide_lmic,PLFS-HCES)
 
 write.csv(tab3_wide_lmic,paste(path,
-                "/Outputs/Intermediate/state_pov_lmic_w.csv",sep=""))
+                               "/Outputs/Intermediate/state_pov_lmic_w.csv",sep=""))
 #ranking plot
 tab3_wide_lmic <- tab3_wide_lmic %>%
   mutate(
@@ -585,7 +509,7 @@ ggplot(tab3, aes(y = as.factor(state_name), x = statistic.povlic, fill = survey)
        fill = "Survey",
        title = "Actual and imputed poverty rates by state") +
   xlim(c(0,40))+
-theme_minimal()
+  theme_minimal()
 ggsave(paste(path,
              "/Outputs/Intermediate/Poverty State lic.png",sep=""),
        width = 30, height = 20, units = "cm")
@@ -616,28 +540,19 @@ ggsave(paste(path,
 #plfs.don is here the harmonized PLFS 2022 with all common variables between the
 #different rounds of the PLFS to be used in stage 2
 plfs.don=read_dta(paste(datapath,
-      "/Data/Stage 2/Cleaned/IND_2022_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",sep=""))
+                        "/Data/Stage 2/Cleaned/IND_2023_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",sep=""))
 #We bring the dataset containing the imputed consumption
 plfs.imp=read_dta(paste(datapath,
-          "/Data/Stage 1/Final/Imputed_PLFS_22_match.dta",sep=""))
-plfs.imp=subset(plfs.imp,select=c(hhid,mpce_sp_def_ind,shr_clothing_plfs,shr_clothing_hces))
+                        "/Data/Stage 1/Final/Imputed_PLFS_23_match.dta",sep=""))
+plfs.imp=subset(plfs.imp,select=c(hhid,mpce_sp_def_ind))
 plfs.don=merge(plfs.don,plfs.imp,by="hhid",all.x=TRUE)
 rm(plfs.imp)
 plfs.don=subset(plfs.don,!is.na(mpce_sp_def_ind))
 #The ratio is calculated by dividing the imputed consumption by the
 #previously deflated and temporaly adjusted 
 #abbreviated consumption available in the PLFS.
-
-#New in this version: rescale abbreviated consumption
-plfs.don = plfs.don %>%
-  mutate(delta=(shr_clothing_hces*mpce_sp_def_ind)/(shr_clothing_plfs*consumption_pc_adj)-1,
-         delta=ifelse(delta<Inf,delta,0),
-         delta=ifelse(delta<0,0,delta),
-         delta=ifelse(delta>1,1,delta),
-         consumption_pc_adj_resc=consumption_pc_adj*(1-shr_clothing*delta/(1+delta)),
-         ratio = mpce_sp_def_ind/consumption_pc_adj,
-         ratio.r = mpce_sp_def_ind/consumption_pc_adj_resc)
-
+plfs.don$ratio = with(plfs.don,
+                      mpce_sp_def_ind/consumption_pc_adj)
 
 ### Figure 12####
 
@@ -648,17 +563,17 @@ plfs.don$quintile=xtile(plfs.don$mpce_sp_def_ind,n=5,wt=plfs.don$weight)
 plfs.don$quintile=as.factor(plfs.don$quintile)
 plfs.don$pop_wgt=with(plfs.don,hh_size * weight)
 
-ggplot(plfs.don, aes(x = ratio.r, y = fct_rev(quintile), 
+ggplot(plfs.don, aes(x = ratio, y = fct_rev(quintile), 
                      weight = pop_wgt, fill = quintile)) +
   geom_density_ridges(alpha = 0.5, scale = 1.5, rel_min_height = 0.01) +
   labs(x = "Ratio",
        y = "Quintile",
-       title = "Ridgeline Plot of MMRP to Abbreviate Consumption (2022-23, rescaled-delta)") +
+       title = "Ridgeline Plot of MMRP to Abbreviate Consumption (2022-23)") +
   xlim(c(0, 7.5)) +
   theme_ridges() + 
   theme(legend.position = "none") 
 ggsave(paste(path,
-    "/Outputs/Main/Figures/Figure 12.png",sep=""),
+             "/Outputs/Main/Figures/Figure 12.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 
@@ -667,7 +582,7 @@ ggsave(paste(path,
 #HEATMAP OF DECILES
 
 plfs.don$decile_mmrp=xtile(plfs.don$mpce_sp_def_ind,n=10,wt=plfs.don$pop_wgt)
-plfs.don$decile_abbr=xtile(plfs.don$consumption_pc_adj_resc,n=10,wt=plfs.don$pop_wgt)
+plfs.don$decile_abbr=xtile(plfs.don$consumption_pc_adj,n=10,wt=plfs.don$pop_wgt)
 
 des <- svydesign(ids = ~1, weights = ~pop_wgt, data = plfs.don)
 
@@ -689,12 +604,12 @@ ggplot(heatmap_data, aes(x = decile_mmrp, y = decile_abbr, fill = rel_freq)) +
   labs(
     title = "Cross-Decile Heatmap",
     x = "Deciles of imputed consumption",
-    y = "Deciles of abbreviated consumption (rescaled)",
+    y = "Deciles of abbreviated consumption",
     fill = "Proportion of population"
   ) +
   theme_minimal()
 ggsave(paste(path,
-        "/Outputs/Annex/Figures/Figure B4.png",sep=""),
+             "/Outputs/Annex/Figures/Figure B4.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 
@@ -707,7 +622,7 @@ plfs = plfs.don %>%
          ventile=xtile(welfare,n=20,wt=weight)) 
 
 hces=read_dta(paste0(datapath,
-             "/Data/Stage 1/Cleaned/HCES22_s2s.dta"))
+                     "/Data/Stage 1/Cleaned/HCES23_s2s.dta"))
 hces$survey="HCES"
 hces = hces %>%
   rename(welfare=mpce_sp_def_ind, weight=pop_wgt) %>%
@@ -756,6 +671,5 @@ ggplot(wide_ventiles, aes(y = ventile)) +
   theme(panel.grid.minor = element_blank())
 
 ggsave(paste(path,
-    "/Outputs/Main/Figures/Figure 9.png",sep=""),
+             "/Outputs/Main/Figures/Figure 9.png",sep=""),
        width = 25, height = 15, units = "cm")
-

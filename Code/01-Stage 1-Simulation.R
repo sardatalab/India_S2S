@@ -4,9 +4,9 @@
 
 
 # parallel set
-numCores <- detectCores()
-cl <- makeCluster(numCores-1)
-registerDoParallel(cl)
+#numCores <- detectCores()
+#cl <- makeCluster(numCores-1)
+#registerDoParallel(cl)
 
 #####Define custom functions####
 
@@ -59,8 +59,10 @@ formula.mod.b <- as.formula(paste("consumption_pc ~",
   simcons_match=subset(data.rec,sel=c(hhid))
   #prediction
   simcons_pred=subset(data.rec,sel=c(hhid))
-  #share_clothing
-  simcons_cloth=subset(data.rec,sel=c(hhid))
+  #pds
+  simcons_pds=subset(data.rec,sel=c(hhid))
+  #other_cash
+  simcons_oth=subset(data.rec,sel=c(hhid))
   #R squared
   r2=c()
   md=c()
@@ -174,7 +176,8 @@ formula.mod.b <- as.formula(paste("consumption_pc ~",
   samp.atemp=data.frame(samp.atemp)
   row.names(samp.btemp)=as.character(seq(1:nrow(samp.btemp)))
   row.names(samp.atemp)=as.character(seq(1:nrow(samp.atemp)))
-
+  samp.atemp=subset(samp.atemp,!is.na(ymatch))
+  
   #Matching using lasso predictions and random nearest neighbor distance hot deck (D'Orazio, 2017)
   rnd.2 <- RANDwNND.hotdeck(data.rec=samp.btemp, data.don=samp.atemp,
                             match.vars=X.mtc, don.class=group.v,
@@ -189,25 +192,29 @@ formula.mod.b <- as.formula(paste("consumption_pc ~",
   fA.wrnd.c = fA.wrnd[,c("hhid","mpce_sp_def_ind")]
   names(fA.wrnd.c)[2]=paste("mpce_sp_def_ind_",j,sep="")
   simcons_match=merge(simcons_match,fA.wrnd.c,by="hhid")
-  #share_clothing
-  fA.wrnd.s = fA.wrnd[,c("hhid","shr_clothing")]
-  names(fA.wrnd.s)[2]=paste("shr_clothing_",j,sep="")
-  simcons_cloth=merge(simcons_cloth,fA.wrnd.s,by="hhid")
+  #pds
+  fA.wrnd.p = fA.wrnd[,c("hhid","pds")]
+  names(fA.wrnd.p)[2]=paste("pds_",j,sep="")
+  simcons_pds=merge(simcons_pds,fA.wrnd.p,by="hhid")
+  #pds
+  fA.wrnd.o = fA.wrnd[,c("hhid","other_cash")]
+  names(fA.wrnd.o)[2]=paste("oth_",j,sep="")
+  simcons_oth=merge(simcons_oth,fA.wrnd.o,by="hhid")
   
-  rm(samp.atemp,samp.btemp,fA.wrnd.c,fA.wrnd.s,rnd.2)
+  rm(samp.atemp,samp.btemp,fA.wrnd.c,fA.wrnd.p,fA.wrnd.o,rnd.2)
   }
 
-stopCluster(cl)
+#stopCluster(cl)
   
   
 #save simulations results
 #R-squared
 write.csv(r2,file=paste(datapath,
-   "/Outputs/Intermediate/Simulations22_R2_",sim,".csv",sep=""),
+   "/Outputs/Intermediate/Simulations23_R2_",sim,".csv",sep=""),
             row.names = FALSE)
 #Model used
 write.csv(md,file=paste(datapath,
-    "/Outputs/Intermediate/Simulations22_model_used_",sim,".csv",sep=""),
+    "/Outputs/Intermediate/Simulations23_model_used_",sim,".csv",sep=""),
             row.names = FALSE)
   
   
@@ -216,47 +223,54 @@ write.csv(md,file=paste(datapath,
                                      1,mean,na.rm=TRUE)
   simcons_match$mpce_sp_def_ind_median=apply(simcons_match[,-1],
                                        1,median,na.rm=TRUE)
-  simcons_match$mpce_sp_def_ind_geom=apply(simcons_match[,-1],
-                                     1,geometric_mean,na.rm=TRUE)
 write.csv(simcons_match,file=paste(datapath,
-        "/Data/Stage 1/Final/Simulations22_match_",sim,".csv",sep=""),
+        "/Data/Stage 1/Final/Simulations23_match_",sim,".csv",sep=""),
         row.names = FALSE)
 saveRDS(simcons_match,file=paste(datapath,
-        "/Data/Stage 1/Final/Simulations22_match_",sim,".rds",sep=""))
+        "/Data/Stage 1/Final/Simulations23_match_",sim,".rds",sep=""))
 
 #Ensembles pred
 simcons_pred$mpce_sp_def_ind_mean=apply(simcons_pred[,-1],
                                    1,mean,na.rm=TRUE)
 simcons_pred$mpce_sp_def_ind_median=apply(simcons_pred[,-1],
                                      1,median,na.rm=TRUE)
-simcons_pred$mpce_sp_def_ind_geom=apply(simcons_pred[,-1],
-                                   1,geometric_mean,na.rm=TRUE)
 
 write.csv(simcons_pred,file=paste(datapath,
-       "/Data/Stage 1/Final/Simulations22_pred_",sim,".csv",sep=""),
+       "/Data/Stage 1/Final/Simulations23_pred_",sim,".csv",sep=""),
           row.names = FALSE)
 saveRDS(simcons_pred,file=paste(datapath,
-      "/Data/Stage 1/Final/Simulations22_pred_",sim,".rds",sep=""))
+      "/Data/Stage 1/Final/Simulations23_pred_",sim,".rds",sep=""))
 
-#Ensembles share clothing
-simcons_cloth$shr_clothing_mean=apply(simcons_cloth[,-1],
+#Ensembles pds
+simcons_pds$pds_mean=apply(simcons_pds[,-1],
                                          1,mean,na.rm=TRUE)
-simcons_cloth$shr_clothing_median=apply(simcons_cloth[,-1],
+simcons_pds$pds_median=apply(simcons_pds[,-1],
                                            1,median,na.rm=TRUE)
-#simcons_cloth$shr_clothing_geom=apply(simcons_cloth[,-1],
-#                                         1,geometric_mean,na.rm=TRUE)
-write.csv(simcons_cloth,file=paste(datapath,
-                                   "/Data/Stage 1/Final/Simulations22_share_",sim,".csv",sep=""),
+write.csv(simcons_pds,file=paste(datapath,
+                                   "/Data/Stage 1/Final/Simulations23_pds_",sim,".csv",sep=""),
           row.names = FALSE)
-saveRDS(simcons_cloth,file=paste(datapath,
-                                 "/Data/Stage 1/Final/Simulations22_share_",sim,".rds",sep=""))
+saveRDS(simcons_pds,file=paste(datapath,
+                                 "/Data/Stage 1/Final/Simulations23_pds_",sim,".rds",sep=""))
+
+
+
+#Ensembles other cash
+simcons_oth$oth_mean=apply(simcons_oth[,-1],
+                           1,mean,na.rm=TRUE)
+simcons_oth$oth_median=apply(simcons_oth[,-1],
+                             1,median,na.rm=TRUE)
+write.csv(simcons_oth,file=paste(datapath,
+                                 "/Data/Stage 1/Final/Simulations23_oth_",sim,".csv",sep=""),
+          row.names = FALSE)
+saveRDS(simcons_oth,file=paste(datapath,
+                               "/Data/Stage 1/Final/Simulations23_oth_",sim,".rds",sep=""))
 
 
 #Ensemble coefficients
 coefs$coef=apply(coefs, 1,mean,na.rm=TRUE)
 
 write.csv(coefs,file=paste(datapath,
-      "/Outputs/Intermediate/Simulations22_coefficients_",sim,".csv",
+      "/Outputs/Intermediate/Simulations23_coefficients_",sim,".csv",
        sep=""),
           row.names = TRUE)
 

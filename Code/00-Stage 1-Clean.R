@@ -2,7 +2,7 @@
 
 #####Prepare receiver survey##### 
 data.rec=read_dta(paste(datapath,
-  "/Data/Stage 1/Cleaned/IND_2022_PLFS_v01_M_v02_A_s2s_HCES_to_PLFS.dta",sep="")) 
+  "/Data/Stage 1/Cleaned/IND_2023_PLFS_v01_M_v01_A_s2s_HCES_to_PLFS.dta",sep="")) 
 #create sequential IDs
 data.rec$hidseq=seq(1:nrow(data.rec))
 
@@ -43,7 +43,7 @@ data.rec=na.omit(data.rec)
 #####Prepare donor survey#####
 
 data.don=read_dta(paste(datapath,
-                        "/Data/Stage 1/Cleaned/HCES22_s2s.dta",sep="")) 
+                        "/Data/Stage 1/Cleaned/HCES23_s2s.dta",sep="")) 
 #create sequential Ids
 data.don$hidseq=seq(1:nrow(data.don))
 
@@ -70,6 +70,13 @@ missing_report.don <- data.don %>%
                  names_to = "Variable", values_to = "PercentMissing")
 subset(missing_report.don,PercentMissing>0)
 
+
+#####Merge additional variables in donor survey#####
+
+sp.vars=read_dta(paste(datapath,
+                        "/Data/Stage 1/Cleaned/transfers_merge23.dta",sep="")) 
+
+data.don=merge(data.don,sp.vars,by="hhid",all.x=TRUE)
 
 ### Load Excel file with states names
 states=read_excel(paste0(datapath,

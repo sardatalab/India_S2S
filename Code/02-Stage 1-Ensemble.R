@@ -16,10 +16,13 @@ compute_wasserstein_distance <- function(original, predicted_matrix) {
 simcons_match <- simcons_match %>%
   left_join(data.rec %>% select(hhid, state, urb), by = "hhid")
 
-simcons_pred <- simcons_pred %>%
+#simcons_pred <- simcons_pred %>%
+#  left_join(data.rec %>% select(hhid, state, urb), by = "hhid")
+
+simcons_pds <- simcons_pds %>%
   left_join(data.rec %>% select(hhid, state, urb), by = "hhid")
 
-simcons_cloth <- simcons_cloth %>%
+simcons_oth <- simcons_oth %>%
   left_join(data.rec %>% select(hhid, state, urb), by = "hhid")
 
 # Missing values report
@@ -45,65 +48,95 @@ simcons_match <- as.data.frame(mapply(function(x, y) {
 original_data <- list()
 sim_data_match <- list()
 sim_data_pred <- list()
-sim_data_cloth <- list()
+sim_data_pds <- list()
+sim_data_oth <- list()
 hhid_match <- list()
 hhid_pred <- list()
-hhid_cloth <- list()
+hhid_pds <- list()
+hhid_oth <- list()
 
 #Double check missing values in data.don
 #data.don=na.omit(data.don)
 
 # Group state-sector data using lists
 foreach (i = c(1:25, 27:37)) %do% { 
-  foreach (a = c(0,1)) %do% {
-    cat("State", i, "Sector", a, "\n",sep=" ")
+  foreach (a = c(0, 1)) %do% {
+    
+    cat("State", i, "Sector", a, "\n", sep = " ")
+    
+    # Filter once for each dataset
+    original_filtered <- data.don %>%
+      filter(state == i & urb == a)
+    
+    match_filtered <- simcons_match %>%
+      filter(state == i & urb == a)
+    
+    pred_filtered <- simcons_pred %>%
+      filter(state == i & urb == a)
+    
+    pds_filtered <- simcons_pds %>%
+      filter(state == i & urb == a)
+    
+    oth_filtered <- simcons_oth %>%
+      filter(state == i & urb == a)
+    
+    # Decide whether this state-sector combination exists in the simulated data
+    has_obs <- nrow(match_filtered) > 0 &
+      nrow(original_filtered)  > 0 
+    
+    key <- if (has_obs) paste(i, a, sep = "_") else as.character(i)
+    
+    if (!has_obs) {
+      original_filtered <- data.don %>%
+        filter(state == i)
+      
+      match_filtered <- simcons_match %>%
+        filter(state == i)
+      
+      pred_filtered <- simcons_pred %>%
+        filter(state == i)
+      
+      pds_filtered <- simcons_pds %>%
+        filter(state == i)
+      
+      oth_filtered <- simcons_oth %>%
+        filter(state == i)
+    }
     
     # Original distribution in HCES
-    original_data[[paste(i, a, sep = "_")]] <- as.numeric(subset(data.don,
-                                 state == i & urb == a)$mpce_sp_def_ind)
+    original_data[[key]] <- as.numeric(original_filtered$mpce_sp_def_ind)
     
-    # Matching: Extract `hhid` first, then filter numeric variables
-    match_filtered <- simcons_match %>%
-      filter(state == i & urb == a)  
-    
-    hhid_match[[paste(i, a, sep = "_")]] <- match_filtered$hhid  # Store `hhid`
-    
-    pred_matrix_match <- match_filtered %>%  
-      select(starts_with("mpce_")) %>%  # Only numeric values
-      as.matrix()
-    
-    sim_data_match[[paste(i, a, sep = "_")]] <- pred_matrix_match
-    
-    # Predictions: Extract hhid first, then filter numeric variables
-    pred_filtered <- simcons_pred %>%
-      filter(state == i & urb == a)  
-    
-    hhid_pred[[paste(i, a, sep = "_")]] <- pred_filtered$hhid  # Store hhid
-    
-    pred_matrix_pred <- pred_filtered %>%
+    # Matching
+    hhid_match[[key]] <- match_filtered$hhid
+    sim_data_match[[key]] <- match_filtered %>%
       select(starts_with("mpce_")) %>%
       as.matrix()
     
-    sim_data_pred[[paste(i, a, sep = "_")]] <- pred_matrix_pred
-    
-    # Clothing Share: Extract `hhid` first, then filter numeric variables
-    cloth_filtered <- simcons_cloth %>%
-      filter(state == i & urb == a)  
-    
-    hhid_cloth[[paste(i, a, sep = "_")]] <- cloth_filtered$hhid  # Store `hhid`
-    
-    cloth_matrix_match <- cloth_filtered %>%  
-      select(starts_with("shr_")) %>%  # Only numeric values
+    # Predictions
+    hhid_pred[[key]] <- pred_filtered$hhid
+    sim_data_pred[[key]] <- pred_filtered %>%
+      select(starts_with("mpce_")) %>%
       as.matrix()
     
-    sim_data_cloth[[paste(i, a, sep = "_")]] <- cloth_matrix_match
+    # PDS
+    hhid_pds[[key]] <- pds_filtered$hhid
+    sim_data_pds[[key]] <- pds_filtered %>%
+      select(starts_with("pds_")) %>%
+      as.matrix()
+    
+    # Other cash
+    hhid_oth[[key]] <- oth_filtered$hhid
+    sim_data_oth[[key]] <- oth_filtered %>%
+      select(starts_with("oth_")) %>%
+      as.matrix()
   }
 }
 
 # Store predicted vectors for each state-sector
 sel_predictions_match <- list()
 sel_predictions_pred <- list()
-sel_predictions_cloth <- list()
+sel_predictions_pds <- list()
+sel_predictions_oth <- list()
 closest_index_match <- list()
 closest_index_pred <- list()
 
@@ -126,9 +159,14 @@ for (key in names(original_data)) {
     mpce_sp_def_ind = sim_data_match[[key]][, closest_index_match[[key]]]
   )
   
-  sel_predictions_cloth[[key]] <- data.frame(
-    hhid = hhid_cloth[[key]],  # Merge with hhid
-    shr_clothing = sim_data_cloth[[key]][, closest_index_match[[key]]]
+  sel_predictions_pds[[key]] <- data.frame(
+    hhid = hhid_pds[[key]],  # Merge with hhid
+    pds = sim_data_pds[[key]][, closest_index_match[[key]]]
+  )
+  
+  sel_predictions_oth[[key]] <- data.frame(
+    hhid = hhid_oth[[key]],  # Merge with hhid
+    oth = sim_data_oth[[key]][, closest_index_match[[key]]]
   )
   
   sel_predictions_pred[[key]] <- data.frame(
@@ -140,7 +178,8 @@ for (key in names(original_data)) {
 # Concatenate the selected vectors into a single final prediction dataset
 final_match_df <- do.call(rbind, sel_predictions_match)  # Merge all into a dataframe
 final_pred_df <- do.call(rbind, sel_predictions_pred)  
-final_cloth_df <- do.call(rbind, sel_predictions_cloth)
+final_pds_df <- do.call(rbind, sel_predictions_pds)
+final_oth_df <- do.call(rbind, sel_predictions_oth)
 
 closest_index_match <- unlist(closest_index_match)
 closest_index_pred <- unlist(closest_index_pred)
@@ -153,20 +192,18 @@ head(final_pred_df)
 #Keep prediction-based imputation
 data.rec2=merge(data.rec,final_pred_df,by="hhid",all.x = TRUE)
 write_dta(data.rec2,paste(datapath,
-     "/Data/Stage 1/Final/Imputed_PLFS_22_pred.dta",sep=""))
+     "/Data/Stage 1/Final/Imputed_PLFS_23_pred.dta",sep=""))
 
 
 #Keep matching-based imputation using distributional distance
-data.rec <- data.rec %>%
-  rename (shr_clothing_plfs = shr_clothing )
-
-# For more stability (avoid extreme values) ins share of clothing, use median instead 
+# For more stability (avoid extreme values), use median instead 
 # of the simulation that reproduces more accurately the mmrp distribution
-final_cloth_df = subset(simcons_cloth,select=c(hhid,shr_clothing_median))
+#final_pds_df = subset(simcons_pds,select=c(hhid,pds_median))
+#final_oth_df = subset(simcons_oth,select=c(hhid,oth_median))
 
 data.rec2=merge(data.rec,final_match_df,by="hhid",all.x = TRUE)
-data.rec2=merge(data.rec2,final_cloth_df,by="hhid",all.x = TRUE)
-data.rec2 <- data.rec2 %>%
-  rename ( shr_clothing_hces = shr_clothing_median)
+data.rec2=merge(data.rec2,final_pds_df,by="hhid",all.x = TRUE)
+data.rec2=merge(data.rec2,final_oth_df,by="hhid",all.x = TRUE)
+
 write_dta(data.rec2,paste(datapath,
-      "/Data/Stage 1/Final/Imputed_PLFS_22_match.dta",sep=""))
+      "/Data/Stage 1/Final/Imputed_PLFS_23_match.dta",sep=""))

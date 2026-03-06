@@ -1,8 +1,7 @@
 ### Evolution of Post-2011 Poverty in India: A Survey-to-Survey Imputation Approach
 ### Reproducibility Package
-### This version: Dec 8, 2025
-### Rescale abbreviated consumption 2020-22 in PLFS using delta calculated
-### endogenously by bringing clothing and footwear expenditure in HCES
+### This version: March 2nd, 2026
+### Bring social transfers in stage 1
 ### Author: Jaime Fernandez Romero (jfernandezromero@worldbank.org)
 
 ### Main R Script
@@ -43,7 +42,7 @@ lapply(packages, require, character.only = TRUE)
 
 # Set paths
 path <- "C:/Users/wb553773/GitHub/India_S2S"
-datapath <- "C:/Users/wb553773/OneDrive - WBG/Stats Team/IND S2S imputation/Reproducibility package"
+datapath <- "C:/Users/wb553773/OneDrive - WBG/Stats Team/IND S2S imputation/Reproducibility package 2023"
 
 # Set global parameters
 
@@ -61,7 +60,7 @@ seed = 1729
 
 # Matching parameters stage 1
 X.mtc1=c("ymatch","hh_size","hh_head_age") # nearest neighbor search variables
-don.vars1=c("shr_clothing","mpce_sp_def_ind") #variables to be imputed
+don.vars1=c("pds","other_cash","mpce_sp_def_ind") #variables to be imputed
 
 # Matching parameters stage 2
 X.mtc2=c("ymatch","hh_size","hhb_year") # nearest neighbor search variables
@@ -73,23 +72,14 @@ use_stat="median" #alternatively: mean, median geometric_mean
 # Type of model: "match" is PMM-style and "pred" is MI-style
 use_mod="match"  
 
-# Parameters to convert vectors in 2022 prices to 2021 PPP
-cpi21=1.101906
+# Parameters to convert vectors in 2023 prices to 2021 PPP
+cpi21=1.1575873
 icp21=19.46895
 
 # International poverty lines in 2021 PPP
 lic=3.0
 lmic=4.2
 umic=8.3
-
-# Expected difference between expenditure in clothing and footwear
-# captured through detailed question in comparison to aggregated as
-# part of the usual monthly expenditure in goods and services
-# Pradhan, M. (2009). Welfare Analysis with a Proxy Consumption Measure: 
-# Evidence from a Repeated Experiment in Indonesia. Fiscal Studies, 30(3/4),
-# 391–417. http://www.jstor.org/stable/24440125
-
-#delta=0.345 # Pradhan (2009, p. 406)
 
 # Run R scripts
 
