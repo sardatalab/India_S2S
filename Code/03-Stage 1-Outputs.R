@@ -303,7 +303,7 @@ ggplot(df_ecdf, aes(x = log(mpce_sp_def_ind), y = ecdf, color = survey)) +
   geom_step() +
   labs(x = "Log Consumption",
        y = "Density",
-       title = "ECDF of Original and Imputed Log Consumption by survey (2022-23)")+
+       title = "ECDF of Original and Imputed Log Consumption by survey (2023-24)")+
   geom_vline(xintercept = linelic,linetype="dashed",size=0.5)+
   geom_vline(xintercept = linelmic,linetype="dashed",size=0.5)+
   geom_vline(xintercept = lineumic,linetype="dashed",size=0.5)+
@@ -568,7 +568,7 @@ ggplot(plfs.don, aes(x = ratio, y = fct_rev(quintile),
   geom_density_ridges(alpha = 0.5, scale = 1.5, rel_min_height = 0.01) +
   labs(x = "Ratio",
        y = "Quintile",
-       title = "Ridgeline Plot of MMRP to Abbreviate Consumption (2022-23)") +
+       title = "Ridgeline Plot of MMRP to Abbreviate Consumption (2023-24)") +
   xlim(c(0, 7.5)) +
   theme_ridges() + 
   theme(legend.position = "none") 

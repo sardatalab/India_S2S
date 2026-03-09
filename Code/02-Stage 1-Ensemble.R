@@ -16,8 +16,8 @@ compute_wasserstein_distance <- function(original, predicted_matrix) {
 simcons_match <- simcons_match %>%
   left_join(data.rec %>% select(hhid, state, urb), by = "hhid")
 
-#simcons_pred <- simcons_pred %>%
-#  left_join(data.rec %>% select(hhid, state, urb), by = "hhid")
+simcons_pred <- simcons_pred %>%
+  left_join(data.rec %>% select(hhid, state, urb), by = "hhid")
 
 simcons_pds <- simcons_pds %>%
   left_join(data.rec %>% select(hhid, state, urb), by = "hhid")
@@ -55,8 +55,6 @@ hhid_pred <- list()
 hhid_pds <- list()
 hhid_oth <- list()
 
-#Double check missing values in data.don
-#data.don=na.omit(data.don)
 
 # Group state-sector data using lists
 foreach (i = c(1:25, 27:37)) %do% { 
@@ -84,23 +82,17 @@ foreach (i = c(1:25, 27:37)) %do% {
     has_obs <- nrow(match_filtered) > 0 &
       nrow(original_filtered)  > 0 
     
-    key <- if (has_obs) paste(i, a, sep = "_") else as.character(i)
-    
-    if (!has_obs) {
-      original_filtered <- data.don %>%
-        filter(state == i)
+    if (!(has_obs && as.character(i) %in% names(original_data))) {
       
-      match_filtered <- simcons_match %>%
-        filter(state == i)
+      key <- if (has_obs) paste(i, a, sep = "_") else as.character(i)
       
-      pred_filtered <- simcons_pred %>%
-        filter(state == i)
-      
-      pds_filtered <- simcons_pds %>%
-        filter(state == i)
-      
-      oth_filtered <- simcons_oth %>%
-        filter(state == i)
+      if (!has_obs) {
+        original_filtered <- data.don %>% filter(state == i)
+        match_filtered    <- simcons_match %>% filter(state == i)
+        pred_filtered     <- simcons_pred %>% filter(state == i)
+        pds_filtered      <- simcons_pds %>% filter(state == i)
+        oth_filtered      <- simcons_oth %>% filter(state == i)
+      }
     }
     
     # Original distribution in HCES
