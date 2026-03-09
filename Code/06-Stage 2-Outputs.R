@@ -6,13 +6,13 @@
 ####Figure 13 A####
 
 povrates <- tab_export %>%
-    select(c(povlic, povlmic, povumic,year,sect)) %>%
-    pivot_longer(
+  select(c(povlic, povlmic, povumic,year,sect)) %>%
+  pivot_longer(
     cols = c(povlic, povlmic, povumic),
     names_to = "line",
     values_to = "value"
   ) %>%
-    pivot_wider(
+  pivot_wider(
     names_from = sect,
     values_from = value
   ) %>%
@@ -29,7 +29,7 @@ ggplot(povrates, aes(x = year, y = national * 100, color = line)) +
   theme_minimal()
 
 ggsave(paste(path,
-      "/Outputs/Main/Figures/Figure 13 A.png",sep=""),
+             "/Outputs/Main/Figures/Figure 13 A.png",sep=""),
        width = 20, height = 12, units = "cm")
 
 
@@ -43,7 +43,7 @@ ginis <- tab_export %>%
     names_to = "Aggregate",
     values_to = "value"
   ) 
-  
+
 
 ggplot(ginis[ginis$sect=="national",], 
        aes(x = year, y = value * 100, color = Aggregate)) +
@@ -52,7 +52,7 @@ ggplot(ginis[ginis$sect=="national",],
             vjust = -0.3, size = 5, show.legend = FALSE) +
   labs(title = "",
        x = "Year", y = "Gini Coefficient") +
-    theme_minimal()
+  theme_minimal()
 
 ggsave(paste(path,
              "/Outputs/Main/Figures/Figure 13 B.png",sep=""),
@@ -84,7 +84,7 @@ p3 <- ggplot(povrates, aes(x = year, y = urban*100, color = line)) +
 p2 + p3
 
 ggsave(paste(path,
-          "/Outputs/Main/Figures/Figure 14.png",sep=""),
+             "/Outputs/Main/Figures/Figure 14.png",sep=""),
        width = 25, height = 15, units = "cm")
 
 
@@ -94,7 +94,7 @@ ggsave(paste(path,
 
 #load HCES
 hces=read_dta(paste(datapath,
-              "/Data/Stage 1/Cleaned/HCES22_s2s.dta",sep="")) 
+                    "/Data/Stage 1/Cleaned/HCES22_s2s.dta",sep="")) 
 # state_vars <- paste0("state_", 1:37)
 # state_vars = state_vars[-26] # State 26 does not exist
 # #Regroup state dummies
@@ -129,10 +129,10 @@ tab2
 
 #load PLFS 22
 plfs=read_dta(paste(datapath,
-       "/Data/Stage 2/Cleaned/IND_2022_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",
-       sep=""))
+                    "/Data/Stage 2/Cleaned/IND_2022_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",
+                    sep=""))
 plfs.imp=read_dta(paste(datapath,
-              "/Data/Stage 1/Final/Imputed_PLFS_22_match.dta",sep=""))
+                        "/Data/Stage 1/Final/Imputed_PLFS_22_match.dta",sep=""))
 plfs.imp=subset(plfs.imp,select=c(hhid,mpce_sp_def_ind))
 plfs=merge(plfs,plfs.imp,by="hhid",all.x=TRUE)
 rm(plfs.imp)
@@ -173,8 +173,8 @@ tab3
 
 #equivalent international poverty lines to replicate HCES rates
 lines <- svyquantile(~abbr_cons_ppp, 
-                           svydf, 
-                           quantiles = as.numeric(tab1[2:4])) 
+                     svydf, 
+                     quantiles = as.numeric(tab1[2:4])) 
 #endogenous lines to replicate HCES headcounts
 q_vals <- lines$abbr_cons_ppp[, "quantile"]
 
@@ -190,40 +190,40 @@ cl <- makeCluster(length(years))
 registerDoParallel(cl)
 
 pov_results <- foreach (year = years, .combine = "rbind",
- .packages = c("survey", "haven","dplyr","tidyr","dineq"),
- .export   = c("q_vals","cpi21","icp21","lic","lmic","umic")) %dopar% {
+                        .packages = c("survey", "haven","dplyr","tidyr","dineq"),
+                        .export   = c("q_vals","cpi21","icp21","lic","lmic","umic")) %dopar% {
                           
-  #Load PLFS data
-  data.rec=read_dta(paste(datapath,
-      "/Data/Stage 2/Cleaned/IND_",year,"_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",
-      sep=""))
-  data.rec$pop_wgt = with(data.rec,weight*hh_size)
-  data.rec = subset(data.rec,!is.na(consumption_pc_adj) & !is.na(pop_wgt))
-  #poverty with intl lines
-  data.rec$povlic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<lic,1,0)
-  data.rec$povlmic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<lmic,1,0)
-  data.rec$povumic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<umic,1,0)
-  
-  #poverty with equivalent lines
-  lic_end=q_vals[1] #lic equivalent line
-  lmic_end=q_vals[2] #lmic equivalent line
-  umic_end=q_vals[3] #umic equivalent line
-  data.rec$povlic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<lic_end,1,0)
-  data.rec$povlmic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<lmic_end,1,0)
-  data.rec$povumic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<umic_end,1,0)
-  
-  svydf <- svydesign(ids = ~hhid, data = data.rec, strata= ~strata, 
-                                             weights = ~pop_wgt)
-                          
-  #Overall Poverty with intl lines
-  tab1=data.frame(svymean(~povlic+povlmic+povumic,  design=svydf, 
-                                       na.rm=TRUE))
-  #Overall Poverty with endogenous lines
-  tab2=data.frame(svymean(~povlic_end+povlmic_end+povumic_end,  design=svydf, 
-               na.rm=TRUE))
-  tab1$year=year
-  data.frame(tab1,tab2)
-}
+#Load PLFS data
+data.rec=read_dta(paste(datapath,
+       "/Data/Stage 2/Cleaned/IND_",year,"_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",
+          sep=""))
+data.rec$pop_wgt = with(data.rec,weight*hh_size)
+data.rec = subset(data.rec,!is.na(consumption_pc_adj) & !is.na(pop_wgt))
+#poverty with intl lines
+data.rec$povlic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<lic,1,0)
+data.rec$povlmic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<lmic,1,0)
+data.rec$povumic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<umic,1,0)
+
+#poverty with equivalent lines
+lic_end=q_vals[1] #lic equivalent line
+lmic_end=q_vals[2] #lmic equivalent line
+umic_end=q_vals[3] #umic equivalent line
+data.rec$povlic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<lic_end,1,0)
+data.rec$povlmic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<lmic_end,1,0)
+data.rec$povumic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<umic_end,1,0)
+
+svydf <- svydesign(ids = ~hhid, data = data.rec, strata= ~strata, 
+                   weights = ~pop_wgt)
+
+#Overall Poverty with intl lines
+tab1=data.frame(svymean(~povlic+povlmic+povumic,  design=svydf, 
+                        na.rm=TRUE))
+#Overall Poverty with endogenous lines
+tab2=data.frame(svymean(~povlic_end+povlmic_end+povumic_end,  design=svydf, 
+                        na.rm=TRUE))
+tab1$year=year
+data.frame(tab1,tab2)
+                        }
 
 stopCluster(cl)
 
@@ -236,7 +236,7 @@ pov_results$international=100*pov_results$international
 pov_results$endogenous=100*pov_results$endogenous
 
 write.csv(pov_results,file=paste(path,
-    "/Outputs/Intermediate/Poverty_trends_only_PLFS.csv",sep=""))
+                                 "/Outputs/Intermediate/Poverty_trends_only_PLFS.csv",sep=""))
 
 
 
@@ -263,7 +263,7 @@ p2 <- ggplot(pov_results, aes(x = year, y = endogenous, color = line)) +
 p1 + p2
 
 ggsave(paste(path,
-   "/Outputs/Annex/Figures/Figure D 1.png",sep=""),
+             "/Outputs/Annex/Figures/Figure D 1.png",sep=""),
        width = 25, height = 15, units = "cm")
 
 
@@ -275,57 +275,57 @@ cl <- makeCluster(length(years))
 registerDoParallel(cl)
 
 pov_results_sec <- foreach (year = years, .combine = "rbind",
-  .packages = c("survey", "haven","dplyr","tidyr","dineq"),
-  .export   = c("q_vals","cpi21","icp21","lic","lmic","umic")) %dopar% {
-                          
-  #Load PLFS data
-  data.rec=read_dta(paste(datapath,
+                            .packages = c("survey", "haven","dplyr","tidyr","dineq"),
+                            .export   = c("q_vals","cpi21","icp21","lic","lmic","umic")) %dopar% {
+                              
+#Load PLFS data
+data.rec=read_dta(paste(datapath,
        "/Data/Stage 2/Cleaned/IND_",year,"_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",
-       sep=""))
-  data.rec$pop_wgt = with(data.rec,weight*hh_size)
-  data.rec = subset(data.rec,!is.na(consumption_pc_adj) & !is.na(pop_wgt))
+                     sep=""))
+data.rec$pop_wgt = with(data.rec,weight*hh_size)
+data.rec = subset(data.rec,!is.na(consumption_pc_adj) & !is.na(pop_wgt))
 
-  data.rec$povlic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<lic,1,0)
-  data.rec$povlmic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<lmic,1,0)
-  data.rec$povumic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<umic,1,0)
-                          
-  #poverty with equivalent lines
-  lic_end=q_vals[1] #lic equivalent line
-  lmic_end=q_vals[2] #lmic equivalent line
-  umic_end=q_vals[3] #umic equivalent line
-  data.rec$povlic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<lic_end,1,0)
-  data.rec$povlmic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<lmic_end,1,0)
-  data.rec$povumic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi/icp<umic_end,1,0)
-                          
-  svydf <- svydesign(ids = ~hhid, data = data.rec, strata= ~strata, 
-                                             weights = ~pop_wgt)
-                          
-  #Poverty by sector with intl lines
-  tab1=data.frame(svyby(~povlic+povlmic+povumic, ~urban, design=svydf, 
-                                     svymean,na.rm=TRUE))
-  tab1$urban=factor(tab1$urban, levels=c(0,1),labels=c("Rural","Urban"))
-  tab1 = tab1 %>% rename(Sector=urban) %>%
-                              pivot_longer(
-                              cols = c(povlic, povlmic, povumic),  
-                              names_to = "line",               
-                              values_to = "povrate"              
-                            ) %>%
-                            select(c(Sector,line,povrate))
-                          
-  #Poverty by sector with endogenous lines
-  tab2=data.frame(svyby(~povlic_end+povlmic_end+povumic_end, ~urban, design=svydf, 
-                                                svymean,na.rm=TRUE))
-  tab2$urban=factor(tab2$urban, levels=c(0,1),labels=c("Rural","Urban"))
-  tab2 = tab2 %>% rename(Sector=urban) %>%
-                            pivot_longer(
-                              cols = c(povlic_end, povlmic_end, povumic_end),  
-                              names_to = "line",               
-                              values_to = "povrate"               
-                            ) %>%
-                            select(c(Sector,line,povrate))
-  tab1$year=year
-  data.frame(cbind(tab1,tab2))
-}
+data.rec$povlic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<lic,1,0)
+data.rec$povlmic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<lmic,1,0)
+data.rec$povumic = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<umic,1,0)
+
+#poverty with equivalent lines
+lic_end=q_vals[1] #lic equivalent line
+lmic_end=q_vals[2] #lmic equivalent line
+umic_end=q_vals[3] #umic equivalent line
+data.rec$povlic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<lic_end,1,0)
+data.rec$povlmic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<lmic_end,1,0)
+data.rec$povumic_end = ifelse(data.rec$consumption_pc_adj*(12/365)/cpi21/icp21<umic_end,1,0)
+
+svydf <- svydesign(ids = ~hhid, data = data.rec, strata= ~strata, 
+                   weights = ~pop_wgt)
+
+#Poverty by sector with intl lines
+tab1=data.frame(svyby(~povlic+povlmic+povumic, ~urban, design=svydf, 
+                      svymean,na.rm=TRUE))
+tab1$urban=factor(tab1$urban, levels=c(0,1),labels=c("Rural","Urban"))
+tab1 = tab1 %>% rename(Sector=urban) %>%
+  pivot_longer(
+    cols = c(povlic, povlmic, povumic),  
+    names_to = "line",               
+    values_to = "povrate"              
+  ) %>%
+  select(c(Sector,line,povrate))
+
+#Poverty by sector with endogenous lines
+tab2=data.frame(svyby(~povlic_end+povlmic_end+povumic_end, ~urban, design=svydf, 
+                      svymean,na.rm=TRUE))
+tab2$urban=factor(tab2$urban, levels=c(0,1),labels=c("Rural","Urban"))
+tab2 = tab2 %>% rename(Sector=urban) %>%
+  pivot_longer(
+    cols = c(povlic_end, povlmic_end, povumic_end),  
+    names_to = "line",               
+    values_to = "povrate"               
+  ) %>%
+  select(c(Sector,line,povrate))
+tab1$year=year
+data.frame(cbind(tab1,tab2))
+                            }
 
 stopCluster(cl)
 
@@ -339,10 +339,10 @@ pov_results_sec$international=100*pov_results_sec$international
 pov_results_sec$endogenous=100*pov_results_sec$endogenous
 
 write.csv(pov_results,file=paste(path,
-        "/Outputs/Intermediate/Poverty_trends_only_PLFS_sector.csv",sep=""))
+                                 "/Outputs/Intermediate/Poverty_trends_only_PLFS_sector.csv",sep=""))
 
 
-#First plot: intl linea
+#First plot: intl line
 p1 <- ggplot(pov_results_sec, aes(x = year, y = international, color = line)) +
   geom_line(size = 1) +
   geom_text(aes(label = sprintf("%.1f", international)),

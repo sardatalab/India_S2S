@@ -210,11 +210,11 @@ formula.mod.b <- as.formula(paste("consumption_pc ~",
 #save simulations results
 #R-squared
 write.csv(r2,file=paste(datapath,
-   "/Outputs/Intermediate/Simulations23_R2_",sim,".csv",sep=""),
+   "/Outputs/Intermediate/Simulations22_R2_",sim,".csv",sep=""),
             row.names = FALSE)
 #Model used
 write.csv(md,file=paste(datapath,
-    "/Outputs/Intermediate/Simulations23_model_used_",sim,".csv",sep=""),
+    "/Outputs/Intermediate/Simulations22_model_used_",sim,".csv",sep=""),
             row.names = FALSE)
   
   
@@ -224,10 +224,10 @@ write.csv(md,file=paste(datapath,
   simcons_match$mpce_sp_def_ind_median=apply(simcons_match[,-1],
                                        1,median,na.rm=TRUE)
 write.csv(simcons_match,file=paste(datapath,
-        "/Data/Stage 1/Final/Simulations23_match_",sim,".csv",sep=""),
+        "/Data/Stage 1/Final/Simulations22_match_",sim,".csv",sep=""),
         row.names = FALSE)
 saveRDS(simcons_match,file=paste(datapath,
-        "/Data/Stage 1/Final/Simulations23_match_",sim,".rds",sep=""))
+        "/Data/Stage 1/Final/Simulations22_match_",sim,".rds",sep=""))
 
 #Ensembles pred
 simcons_pred$mpce_sp_def_ind_mean=apply(simcons_pred[,-1],
@@ -236,10 +236,10 @@ simcons_pred$mpce_sp_def_ind_median=apply(simcons_pred[,-1],
                                      1,median,na.rm=TRUE)
 
 write.csv(simcons_pred,file=paste(datapath,
-       "/Data/Stage 1/Final/Simulations23_pred_",sim,".csv",sep=""),
+       "/Data/Stage 1/Final/Simulations22_pred_",sim,".csv",sep=""),
           row.names = FALSE)
 saveRDS(simcons_pred,file=paste(datapath,
-      "/Data/Stage 1/Final/Simulations23_pred_",sim,".rds",sep=""))
+      "/Data/Stage 1/Final/Simulations22_pred_",sim,".rds",sep=""))
 
 #Ensembles pds
 simcons_pds$pds_mean=apply(simcons_pds[,-1],
@@ -247,10 +247,10 @@ simcons_pds$pds_mean=apply(simcons_pds[,-1],
 simcons_pds$pds_median=apply(simcons_pds[,-1],
                                            1,median,na.rm=TRUE)
 write.csv(simcons_pds,file=paste(datapath,
-                                   "/Data/Stage 1/Final/Simulations23_pds_",sim,".csv",sep=""),
+                                   "/Data/Stage 1/Final/Simulations22_pds_",sim,".csv",sep=""),
           row.names = FALSE)
 saveRDS(simcons_pds,file=paste(datapath,
-                                 "/Data/Stage 1/Final/Simulations23_pds_",sim,".rds",sep=""))
+                                 "/Data/Stage 1/Final/Simulations22_pds_",sim,".rds",sep=""))
 
 
 
@@ -260,17 +260,17 @@ simcons_oth$oth_mean=apply(simcons_oth[,-1],
 simcons_oth$oth_median=apply(simcons_oth[,-1],
                              1,median,na.rm=TRUE)
 write.csv(simcons_oth,file=paste(datapath,
-                                 "/Data/Stage 1/Final/Simulations23_oth_",sim,".csv",sep=""),
+                                 "/Data/Stage 1/Final/Simulations22_oth_",sim,".csv",sep=""),
           row.names = FALSE)
 saveRDS(simcons_oth,file=paste(datapath,
-                               "/Data/Stage 1/Final/Simulations23_oth_",sim,".rds",sep=""))
+                               "/Data/Stage 1/Final/Simulations22_oth_",sim,".rds",sep=""))
 
 
 #Ensemble coefficients
 coefs$coef=apply(coefs, 1,mean,na.rm=TRUE)
 
 write.csv(coefs,file=paste(datapath,
-      "/Outputs/Intermediate/Simulations23_coefficients_",sim,".csv",
+      "/Outputs/Intermediate/Simulations22_coefficients_",sim,".csv",
        sep=""),
           row.names = TRUE)
 

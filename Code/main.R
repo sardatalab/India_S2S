@@ -42,12 +42,12 @@ lapply(packages, require, character.only = TRUE)
 
 # Set paths
 path <- "C:/Users/wb553773/GitHub/India_S2S"
-datapath <- "C:/Users/wb553773/OneDrive - WBG/Stats Team/IND S2S imputation/Reproducibility package 2023"
+datapath <- "C:/Users/wb553773/OneDrive - WBG/Stats Team/IND S2S imputation/Reproducibility package"
 
 # Set global parameters
 
 # Number of simulations stage 1
-nsim1=100
+nsim1=1000
 
 # Number of simulations stage 2
 nsim2=100
@@ -73,7 +73,7 @@ use_stat="median" #alternatively: mean, median geometric_mean
 use_mod="match"  
 
 # Parameters to convert vectors in 2023 prices to 2021 PPP
-cpi21=1.1575873
+cpi21=1.101906
 icp21=19.46895
 
 # International poverty lines in 2021 PPP

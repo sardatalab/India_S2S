@@ -16,8 +16,8 @@ compute_wasserstein_distance <- function(original, predicted_matrix) {
 simcons_match <- simcons_match %>%
   left_join(data.rec %>% select(hhid, state, urb), by = "hhid")
 
-#simcons_pred <- simcons_pred %>%
-#  left_join(data.rec %>% select(hhid, state, urb), by = "hhid")
+simcons_pred <- simcons_pred %>%
+  left_join(data.rec %>% select(hhid, state, urb), by = "hhid")
 
 simcons_pds <- simcons_pds %>%
   left_join(data.rec %>% select(hhid, state, urb), by = "hhid")
@@ -192,7 +192,7 @@ head(final_pred_df)
 #Keep prediction-based imputation
 data.rec2=merge(data.rec,final_pred_df,by="hhid",all.x = TRUE)
 write_dta(data.rec2,paste(datapath,
-     "/Data/Stage 1/Final/Imputed_PLFS_23_pred.dta",sep=""))
+     "/Data/Stage 1/Final/Imputed_PLFS_22_pred.dta",sep=""))
 
 
 #Keep matching-based imputation using distributional distance
@@ -206,4 +206,4 @@ data.rec2=merge(data.rec2,final_pds_df,by="hhid",all.x = TRUE)
 data.rec2=merge(data.rec2,final_oth_df,by="hhid",all.x = TRUE)
 
 write_dta(data.rec2,paste(datapath,
-      "/Data/Stage 1/Final/Imputed_PLFS_23_match.dta",sep=""))
+      "/Data/Stage 1/Final/Imputed_PLFS_22_match.dta",sep=""))

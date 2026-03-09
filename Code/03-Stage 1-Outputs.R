@@ -2,9 +2,9 @@
 
 ####Figure 3####
 
-#2023 HCES official and PLFS abbreviated consumption density plot
+#2022 HCES official and PLFS abbreviated consumption density plot
 plfs=read_dta(paste0(datapath,
-                     "/Data/Stage 2/Cleaned/IND_2023_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta"))
+                     "/Data/Stage 2/Cleaned/IND_2022_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta"))
 plfs$survey="PLFS"
 plfs = plfs %>%
   mutate(log_consumption_pc_adj = log(consumption_pc_adj),
@@ -12,7 +12,7 @@ plfs = plfs %>%
   rename(welfare=log_consumption_pc_adj)
 
 hces=read_dta(paste0(datapath,
-                     "/Data/Stage 1/Cleaned/HCES23_s2s.dta"))
+                     "/Data/Stage 1/Cleaned/HCES22_s2s.dta"))
 hces$survey="HCES"
 hces = hces %>%
   rename(welfare=mpce_sp_def_ind, weight=pop_wgt) %>%
@@ -24,9 +24,9 @@ df=rbind(subset(hces,select=c(survey,welfare,weight)),
 ggplot(na.omit(df), aes(x = welfare, weight = weight,
                         fill = survey)) +
   geom_density(alpha = 0.4, adjust=1.5) +
-  labs(x = "Log Consumption (2023 prices, spatially adjusted)",
+  labs(x = "Log Consumption (2022 prices, spatially adjusted)",
        y = "Density",
-       title = "Official (HCES) and Abbreviated (PLFS) Log Consumption Aggregate (2023-24)")
+       title = "Official (HCES) and Abbreviated (PLFS) Log Consumption Aggregate (2022-23)")
 
 ggsave(paste(path,
              "/Outputs/Main/Figures/Figure 3.png",sep=""),
@@ -34,7 +34,7 @@ ggsave(paste(path,
 rm(plfs,hces)
 
 ####Figure 4####
-years <- c(2017:2023)
+years <- c(2017:2022)
 for (year in years) {
   plfs.rec=read_dta(paste(datapath,
                           "/Data/Stage 2/Cleaned/IND_",year,"_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",sep="")) 
@@ -50,8 +50,8 @@ survey_list <- list(
   "2019" = data2019,
   "2020" = data2020,
   "2021" = data2021,
-  "2022" = data2022,
-  "2023" = data2023
+  "2022" = data2022
+  #"2023" = data2023
 )
 
 # Define all variables to keep
@@ -177,7 +177,7 @@ ggsave(paste(path,
        width = 25, height = 15, units = "cm")
 
 rm(combined_data,data2017,data2018,data2019,
-   data2020,data2021,data2022,data2023)
+   data2020,data2021,data2022)
 
 ####Table A 1####
 
@@ -278,7 +278,7 @@ ggplot(df, aes(x = log(mpce_sp_def_ind), weight = pop_wgt,
   geom_density(alpha = 0.4, adjust=1.5) +
   labs(x = "Log Consumption",
        y = "Density",
-       title = "Original and Imputed Log Consumption by Survey (2023-24)")
+       title = "Original and Imputed Log Consumption by Survey (2022-23)")
 
 ggsave(paste(path,
              "/Outputs/Main/Figures/figure 8a.png",sep=""),
@@ -540,10 +540,10 @@ ggsave(paste(path,
 #plfs.don is here the harmonized PLFS 2022 with all common variables between the
 #different rounds of the PLFS to be used in stage 2
 plfs.don=read_dta(paste(datapath,
-                        "/Data/Stage 2/Cleaned/IND_2023_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",sep=""))
+                        "/Data/Stage 2/Cleaned/IND_2022_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",sep=""))
 #We bring the dataset containing the imputed consumption
 plfs.imp=read_dta(paste(datapath,
-                        "/Data/Stage 1/Final/Imputed_PLFS_23_match.dta",sep=""))
+                        "/Data/Stage 1/Final/Imputed_PLFS_22_match.dta",sep=""))
 plfs.imp=subset(plfs.imp,select=c(hhid,mpce_sp_def_ind))
 plfs.don=merge(plfs.don,plfs.imp,by="hhid",all.x=TRUE)
 rm(plfs.imp)
@@ -622,7 +622,7 @@ plfs = plfs.don %>%
          ventile=xtile(welfare,n=20,wt=weight)) 
 
 hces=read_dta(paste0(datapath,
-                     "/Data/Stage 1/Cleaned/HCES23_s2s.dta"))
+                     "/Data/Stage 1/Cleaned/HCES22_s2s.dta"))
 hces$survey="HCES"
 hces = hces %>%
   rename(welfare=mpce_sp_def_ind, weight=pop_wgt) %>%
