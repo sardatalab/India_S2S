@@ -84,23 +84,17 @@ foreach (i = c(1:25, 27:37)) %do% {
     has_obs <- nrow(match_filtered) > 0 &
       nrow(original_filtered)  > 0 
     
-    key <- if (has_obs) paste(i, a, sep = "_") else as.character(i)
-    
-    if (!has_obs) {
-      original_filtered <- data.don %>%
-        filter(state == i)
+    if (!(has_obs && as.character(i) %in% names(original_data))) {
       
-      match_filtered <- simcons_match %>%
-        filter(state == i)
+      key <- if (has_obs) paste(i, a, sep = "_") else as.character(i)
       
-      pred_filtered <- simcons_pred %>%
-        filter(state == i)
-      
-      pds_filtered <- simcons_pds %>%
-        filter(state == i)
-      
-      oth_filtered <- simcons_oth %>%
-        filter(state == i)
+      if (!has_obs) {
+        original_filtered <- data.don %>% filter(state == i)
+        match_filtered    <- simcons_match %>% filter(state == i)
+        pred_filtered     <- simcons_pred %>% filter(state == i)
+        pds_filtered      <- simcons_pds %>% filter(state == i)
+        oth_filtered      <- simcons_oth %>% filter(state == i)
+      }
     }
     
     # Original distribution in HCES
