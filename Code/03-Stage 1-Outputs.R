@@ -3,16 +3,14 @@
 ####Figure 3####
 
 #2022 HCES official and PLFS abbreviated consumption density plot
-plfs=read_dta(paste0(datapath,
-     "/Data/Stage 2/Cleaned/IND_2022_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta"))
+plfs=read_dta(file.path(datapath, sprintf(plfs_s2_file, anchor_year)))
 plfs$survey="PLFS"
 plfs = plfs %>%
   mutate(log_consumption_pc_adj = log(consumption_pc_adj),
          weight=weight*hh_size) %>%
   rename(welfare=log_consumption_pc_adj)
 
-hces=read_dta(paste0(datapath,
-          "/Data/Stage 1/Cleaned/HCES22_s2s.dta"))
+hces=read_dta(file.path(datapath, hces_file))
 hces$survey="HCES"
 hces = hces %>%
   rename(welfare=mpce_sp_def_ind, weight=pop_wgt) %>%
@@ -34,25 +32,17 @@ ggsave(paste(path,
 rm(plfs,hces)
 
 ####Figure 4####
-years <- c(2017:2022)
+years <- c(stage2_years, anchor_year)
 for (year in years) {
-  plfs.rec=read_dta(paste(datapath,
-             "/Data/Stage 2/Cleaned/IND_",year,"_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",sep="")) 
+  plfs.rec=read_dta(file.path(datapath, sprintf(plfs_s2_file, year)))
   plfs.rec$log_labor_pc_adj=log(plfs.rec$total_labor_pc_adj+1)
   plfs.rec$log_consumption_pc_adj=log(plfs.rec$consumption_pc_adj+1)
   plfs.rec$pop_wgt=with(plfs.rec,weight*hh_size)
   assign(paste0("data", year), plfs.rec)
 }
 rm(plfs.rec)
-survey_list <- list(
-  "2017" = data2017,
-  "2018" = data2018,
-  "2019" = data2019,
-  "2020" = data2020,
-  "2021" = data2021,
-  "2022" = data2022
-  #"2023" = data2023
-)
+survey_list <- mget(paste0("data", years))
+names(survey_list) <- years
 
 # Define all variables to keep
 vars_to_keep <- c(
@@ -175,8 +165,8 @@ ggsave(paste(path,
              "/Outputs/Main/Figures/Figure 6.png",sep=""),
        width = 25, height = 15, units = "cm")
 
-rm(combined_data,data2017,data2018,data2019,
-   data2020,data2021,data2022)
+rm(combined_data)
+rm(list = paste0("data", years))
 
 ####Table A 1####
 
@@ -538,8 +528,7 @@ ggsave(paste(path,
 #Density plot of ratio 
 #plfs.don is here the harmonized PLFS 2022 with all common variables between the
 #different rounds of the PLFS to be used in stage 2
-plfs.don=read_dta(paste(datapath,
-      "/Data/Stage 2/Cleaned/IND_2022_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",sep=""))
+plfs.don=read_dta(file.path(datapath, sprintf(plfs_s2_file, anchor_year)))
 #We bring the dataset containing the imputed consumption
 plfs.imp=read_dta(paste(datapath,
           "/Data/Stage 1/Final/Imputed_PLFS_22_match.dta",sep=""))
@@ -620,8 +609,7 @@ plfs = plfs.don %>%
          survey="PLFS",
          ventile=xtile(welfare,n=20,wt=weight)) 
 
-hces=read_dta(paste0(datapath,
-             "/Data/Stage 1/Cleaned/HCES22_s2s.dta"))
+hces=read_dta(file.path(datapath, hces_file))
 hces$survey="HCES"
 hces = hces %>%
   rename(welfare=mpce_sp_def_ind, weight=pop_wgt) %>%

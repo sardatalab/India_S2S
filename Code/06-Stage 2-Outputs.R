@@ -93,8 +93,7 @@ ggsave(paste(path,
 ########
 
 #load HCES
-hces=read_dta(paste(datapath,
-              "/Data/Stage 1/Cleaned/HCES22_s2s.dta",sep="")) 
+hces=read_dta(file.path(datapath, hces_file))
 # state_vars <- paste0("state_", 1:37)
 # state_vars = state_vars[-26] # State 26 does not exist
 # #Regroup state dummies
@@ -108,9 +107,9 @@ hces <- hces %>%
 
 df=na.omit(hces)
 
-df$pov30 = ifelse(df$mpce_sp_def_ind*(12/365)/cpi21/icp21<3,1,0)
-df$pov42 = ifelse(df$mpce_sp_def_ind*(12/365)/cpi21/icp21<4.2,1,0)
-df$pov83 = ifelse(df$mpce_sp_def_ind*(12/365)/cpi21/icp21<8.3,1,0)
+df$pov30 = ifelse(df$mpce_sp_def_ind*(12/365)/cpi21/icp21<lic,1,0)
+df$pov42 = ifelse(df$mpce_sp_def_ind*(12/365)/cpi21/icp21<lmic,1,0)
+df$pov83 = ifelse(df$mpce_sp_def_ind*(12/365)/cpi21/icp21<umic,1,0)
 
 #Set as survey
 svydf <- svydesign(ids = ~1, data = df, 
@@ -128,9 +127,7 @@ tab2 = tab2 %>% rename(Sector=urb)
 tab2
 
 #load PLFS 22
-plfs=read_dta(paste(datapath,
-       "/Data/Stage 2/Cleaned/IND_2022_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",
-       sep=""))
+plfs=read_dta(file.path(datapath, sprintf(plfs_s2_file, anchor_year)))
 plfs.imp=read_dta(paste(datapath,
               "/Data/Stage 1/Final/Imputed_PLFS_22_match.dta",sep=""))
 plfs.imp=subset(plfs.imp,select=c(hhid,mpce_sp_def_ind))
@@ -158,9 +155,9 @@ plfs <- plfs %>%
   mutate(survey = "PLFS")
 
 df=na.omit(plfs)
-df$pov30_ab = ifelse(df$abbr_cons_ppp<3,1,0)
-df$pov42_ab = ifelse(df$abbr_cons_ppp<4.2,1,0)
-df$pov83_ab = ifelse(df$abbr_cons_ppp<8.3,1,0)
+df$pov30_ab = ifelse(df$abbr_cons_ppp<lic,1,0)
+df$pov42_ab = ifelse(df$abbr_cons_ppp<lmic,1,0)
+df$pov83_ab = ifelse(df$abbr_cons_ppp<umic,1,0)
 
 #Set as survey
 svydf <- svydesign(ids = ~1, data = df, 
@@ -184,7 +181,7 @@ cat("Endogenous poverty lines are: ",q_vals," in PPP$ (lic, lmic, and umic, resp
 #Poverty trend in PLFS 2017-2022#
 #####
 
-years=c(2017:2022)
+years=c(stage2_years, anchor_year)
 
 cl <- makeCluster(length(years))
 registerDoParallel(cl)
@@ -194,9 +191,7 @@ pov_results <- foreach (year = years, .combine = "rbind",
  .export   = c("q_vals","cpi21","icp21","lic","lmic","umic")) %dopar% {
                           
   #Load PLFS data
-  data.rec=read_dta(paste(datapath,
-      "/Data/Stage 2/Cleaned/IND_",year,"_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",
-      sep=""))
+  data.rec=read_dta(file.path(datapath, sprintf(plfs_s2_file, year)))
   data.rec$pop_wgt = with(data.rec,weight*hh_size)
   data.rec = subset(data.rec,!is.na(consumption_pc_adj) & !is.na(pop_wgt))
   #poverty with intl lines
@@ -227,7 +222,7 @@ pov_results <- foreach (year = years, .combine = "rbind",
 
 stopCluster(cl)
 
-pov_results$line <- factor(rep(c("pov_lic", "pov_lmic", "pov_umic"), times = 6))
+pov_results$line <- factor(rep(c("pov_lic", "pov_lmic", "pov_umic"), times = length(years)))
 pov_results = pov_results %>%
   rename(international = mean,
          endogenous = mean.1)
@@ -279,9 +274,7 @@ pov_results_sec <- foreach (year = years, .combine = "rbind",
   .export   = c("q_vals","cpi21","icp21","lic","lmic","umic")) %dopar% {
                           
   #Load PLFS data
-  data.rec=read_dta(paste(datapath,
-       "/Data/Stage 2/Cleaned/IND_",year,"_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",
-       sep=""))
+  data.rec=read_dta(file.path(datapath, sprintf(plfs_s2_file, year)))
   data.rec$pop_wgt = with(data.rec,weight*hh_size)
   data.rec = subset(data.rec,!is.na(consumption_pc_adj) & !is.na(pop_wgt))
 
@@ -330,7 +323,7 @@ pov_results_sec <- foreach (year = years, .combine = "rbind",
 stopCluster(cl)
 
 pov_results_sec$line <- factor(rep(c("pov_lic", "pov_lmic", "pov_umic"), 
-                                   times = 12))
+                                   times = 2*length(years)))
 pov_results_sec = pov_results_sec %>%
   rename(international = povrate,
          endogenous = povrate.1)

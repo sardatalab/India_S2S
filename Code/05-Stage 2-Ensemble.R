@@ -1,5 +1,5 @@
 
-years=c(2017:2021)
+years=stage2_years
 sim = nsim2 #number of simulations that were used
 rm(df)
 
@@ -10,9 +10,7 @@ pov_results <- foreach (year = years, .combine = "rbind",
 .packages = c("survey", "haven","dplyr","tidyr","dineq")) %dopar% {
   
   #Load PLFS data
-  plfs.rec=read_dta(paste(datapath,
-      "/Data/Stage 2/Cleaned/IND_",year,"_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",
-      sep="")) 
+  plfs.rec=read_dta(file.path(datapath, sprintf(plfs_s2_file, year)))
   #Load simulations results
   df=readRDS(file=paste(datapath,
             "/Data/Stage 2/Final/Simulations_model_",use_mod,"_",year,".rds",sep=""))
@@ -40,14 +38,10 @@ pov_results <- foreach (year = years, .combine = "rbind",
         "/Data/Stage 2/Final/IND_",year,"_PLFS_imputed_ratio_",sim,
                 "_",use_stat,".dta"))
   data.rec = subset(data.rec,!is.na(mpce_sp_def_ind))
-  cpi=1.101906  # 1.3317103 for 2017
-  icp=19.46895  # 19.46904 for 2017
-  lic=3  # 2.15 for 2017
-  lmic=4.2  # 3.65 for 2017
-  umic=8.3  # 6.85 for 2017
-  data.rec$povlic = ifelse(data.rec$mpce_sp_def_ind*(12/365)/cpi/icp<lic,1,0)
-  data.rec$povlmic = ifelse(data.rec$mpce_sp_def_ind*(12/365)/cpi/icp<lmic,1,0)
-  data.rec$povumic = ifelse(data.rec$mpce_sp_def_ind*(12/365)/cpi/icp<umic,1,0)
+  #prices and poverty lines come from the exercise config (cpi21, icp21, lic, lmic, umic)
+  data.rec$povlic = ifelse(data.rec$mpce_sp_def_ind*(12/365)/cpi21/icp21<lic,1,0)
+  data.rec$povlmic = ifelse(data.rec$mpce_sp_def_ind*(12/365)/cpi21/icp21<lmic,1,0)
+  data.rec$povumic = ifelse(data.rec$mpce_sp_def_ind*(12/365)/cpi21/icp21<umic,1,0)
   
   
   #Tables
@@ -102,18 +96,16 @@ pov_results <- foreach (year = years, .combine = "rbind",
 
 stopCluster(cl)
 
-# Bring official numbers for 2022
+# Bring official numbers for the anchor year
 
-plfs=read_dta(paste0(datapath,
-      "/Data/Stage 2/Cleaned/IND_2022_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta"))
+plfs=read_dta(file.path(datapath, sprintf(plfs_s2_file, anchor_year)))
 plfs$survey="PLFS"
 plfs = plfs %>%
   mutate( weight=weight*hh_size) %>%
   rename(welfare=consumption_pc_adj) %>%
   filter(!is.na(weight))
 
-hces=read_dta(paste0(datapath,
-                     "/Data/Stage 1/Cleaned/HCES22_s2s.dta"))
+hces=read_dta(file.path(datapath, hces_file))
 hces$survey="HCES"
 hces = hces %>%
   rename(welfare=mpce_sp_def_ind, 
@@ -153,7 +145,7 @@ gini_cons_abb=c(with(df[df$survey=="PLFS",],gini.wtd(welfare,weight)),
 pov_2022=data.frame(sect=c("national","rural","urban"),
                   rbind(tab1[tab1$survey=="HCES",c("povlic","povlmic","povumic")],
                         tab2[tab2$survey=="HCES",c("povlic","povlmic","povumic")]),
-                  gini_cons_imp,gini_cons_abb,year=2022)
+                  gini_cons_imp,gini_cons_abb,year=anchor_year)
 
 tab_export=bind_rows(pov_results,pov_2022)
 row.names(tab_export)=NULL

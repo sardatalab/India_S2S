@@ -10,7 +10,7 @@ plfs.don$hidseq=seq(1:nrow(plfs.don))
 #plfs.don$qtil=xtile(plfs.don$consumption_pc_adj,n=5,wt=plfs.don$weight)
 plfs.don$hh_type <- as.factor(plfs.don$hh_type)
 plfs.don$state <- as.factor(plfs.don$state)
-plfs.don$hhb_year=with(plfs.don,2022-hh_head_age)
+plfs.don$hhb_year=with(plfs.don,anchor_year-hh_head_age)
 plfs.don$hh_head_age_sq = with(plfs.don,hh_head_age^2)
 plfs.don$hh_size_sq = with(plfs.don,hh_size^2)
 plfs.don$log_labor_pc_adj=log(plfs.don$total_labor_pc_adj+1)
@@ -43,15 +43,13 @@ subset(missing_report.don,PercentMissing>0)
 
 set.seed(seed)
 
-#############
-#YEAR = 2017#
-#############
-#We train models in 2022 data only in the first year (2017)
-year=2017
+#########################
+#FIRST YEAR (train_year)#
+#########################
+#We train models on the anchor year (donor) data only in the first year
+year=train_year
 #####Prepare receiver survey##### 
-plfs.rec=read_dta(paste(datapath,
-      "/Data/Stage 2/Cleaned/IND_",year,"_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",
-      sep="")) 
+plfs.rec=read_dta(file.path(datapath, sprintf(plfs_s2_file, year)))
 #create sequential IDs
 plfs.rec$hidseq=seq(1:nrow(plfs.rec))
 plfs.rec=subset(plfs.rec,!is.na(consumption_pc_adj))
@@ -345,11 +343,11 @@ saveRDS(df.pred,file=paste(datapath,
               "/Data/Stage 2/Final/Simulations_model_pred_",year,
                     ".rds",sep=""))
 rm(year,df.match,df.pred,plfs.rec)
-########################
-#OTHER YEARS AFTER 2017#
-########################
+#############
+#OTHER YEARS#
+#############
 #starting the 2nd year, we use the models previously trained###
-years=2018:2021
+years=setdiff(stage2_years, train_year)
 
 # parallel set
 cl <- makeCluster(length(years))
@@ -364,9 +362,7 @@ foreach (year = years,
                        "compute_r_squared")) %dopar% {
 
 #####Prepare receiver survey##### 
-plfs.rec=read_dta(paste(datapath,
-     "/Data/Stage 2/Cleaned/IND_",year,"_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta",
-     sep="")) 
+plfs.rec=read_dta(file.path(datapath, sprintf(plfs_s2_file, year)))
 #create sequential IDs
 plfs.rec$hidseq=seq(1:nrow(plfs.rec))
 plfs.rec=subset(plfs.rec,!is.na(consumption_pc_adj))

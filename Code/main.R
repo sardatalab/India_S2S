@@ -1,15 +1,22 @@
 ### Evolution of Post-2011 Poverty in India: A Survey-to-Survey Imputation Approach
 ### Reproducibility Package
-### This version: July 29, 2029
 ### Author: Jaime Fernandez Romero (jfernandezromero@worldbank.org)
 
 ### Main R Script
+### 1. Open India_S2S.Rproj (so the working directory is the repo folder)
+### 2. First time only: add your block of paths in config/paths.R
+### 3. Choose the exercise below and run this script
+### Parameters of each exercise (years, files, prices, simulations) are in config/<exercise>.R
 
 #clear all
 rm(list=ls())
 
-#renv::init()
-renv::restore()
+#Exercise to run: one file per exercise in config/
+exercise <- "fy2022_backcast"   # FY 2022-23 anchor, backward to 2017-2021 (July 2025 note)
+
+#Packages: renv::restore() is not called here, because it can stop at an interactive
+#menu and needs access to the package repository in renv.lock. To use the exact package
+#versions of the note, run renv::restore() once in the console (see README).
 # Check intallation of required packages
 packages <- c(
   "StatMatch", "survey", "questionr", "reldist", "glmnet", "useful",
@@ -40,45 +47,27 @@ if (length(missing_pkgs)) {
 lapply(packages, require, character.only = TRUE)
 
 # Set paths
-path <- "C:/Users/wb553773/GitHub/India_S2S"
-datapath <- "C:/Users/wb553773/OneDrive - WBG/Stats Team/IND S2S imputation/Reproducibility package"
+if (!file.exists("config/paths.R")) {
+  stop("Open India_S2S.Rproj first, so that the working directory is the repo folder")
+}
+path <- normalizePath(getwd(), winslash = "/")   # the repo folder
+source(file.path(path, "config/paths.R"))
+if (!exercise %in% names(datapaths)) {
+  stop("No data folder for exercise '", exercise, "': add it to your block in config/paths.R")
+}
+datapath <- datapaths[[exercise]]
 
-# Set global parameters
+# Set the parameters of the exercise
+source(file.path(path, "config", paste0(exercise, ".R")))
 
-# Number of simulations stage 1
-nsim1=1000
-
-# Number of simulations stage 2
-nsim2=100
-
-# Resampling parameter stages 1 and 2
-n.a = .8
-
-# Seed for reproducibility
-seed = 1729
-
-# Matching parameters stage 1
-X.mtc1=c("ymatch","hh_size","hh_head_age") # nearest neighbor search variables
-don.vars1=c("mpce_sp_def_ind") #variables to be imputed
-
-# Matching parameters stage 2
-X.mtc2=c("ymatch","hh_size","hhb_year") # nearest neighbor search variables
-don.vars2=c("ratio") #variables to be imputed
-
-# Statistic to be used to ensemble simulations in stage 2
-use_stat="median" #alternatively: mean, median geometric_mean
-
-# Type of model: "match" is PMM-style and "pred" is MI-style
-use_mod="match"  
-
-# Parameters to convert vectors in 2022 prices to 2021 PPP
-cpi21=1.101906
-icp21=19.46895
-
-# International poverty lines in 2021 PPP
-lic=3.0
-lmic=4.2
-umic=8.3
+# Create the output folders if missing (git does not keep empty folders)
+for (d in c(file.path(path, c("Outputs/Main/Figures", "Outputs/Main/Tables",
+                              "Outputs/Annex/Figures", "Outputs/Annex/Tables",
+                              "Outputs/Intermediate/Models")),
+            file.path(datapath, c("Outputs/Intermediate",
+                                  "Data/Stage 1/Final", "Data/Stage 2/Final")))) {
+  dir.create(d, recursive = TRUE, showWarnings = FALSE)
+}
 
 # Run the R scripts
 
@@ -87,7 +76,7 @@ source(file.path(path, "Code/00-Stage 1-Clean.R"),chdir = TRUE, encoding = "UTF-
 source(file.path(path, "Code/01-Stage 1-Simulation.R"),chdir = TRUE, encoding = "UTF-8")
 source(file.path(path, "Code/02-Stage 1-Ensemble.R"),chdir = TRUE, encoding = "UTF-8")
 source(file.path(path, "Code/03-Stage 1-Outputs.R"),chdir = TRUE, encoding = "UTF-8")
+#Stage 2
 source(file.path(path, "Code/04-Stage 2-Simulation.R"),chdir = TRUE, encoding = "UTF-8")
 source(file.path(path, "Code/05-Stage 2-Ensemble.R"),chdir = TRUE, encoding = "UTF-8")
 source(file.path(path, "Code/06-Stage 2-Outputs.R"),chdir = TRUE, encoding = "UTF-8")
-
