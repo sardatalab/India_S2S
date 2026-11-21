@@ -128,11 +128,11 @@ head(final_pred_df)
 
 #Keep prediction-based imputation
 data.rec2=merge(data.rec,final_pred_df,by="hhid",all.x = TRUE)
-write_dta(data.rec,paste(datapath,
-     "/Data/Stage 1/Final/Imputed_PLFS_22_pred.dta",sep=""))
+write_dta(data.rec,paste(run_path,
+     "/data/Imputed_PLFS_22_pred.dta",sep=""))
 
 
 #Keep matching-based imputation using distributional distance
 data.rec2=merge(data.rec,final_match_df,by="hhid",all.x = TRUE)
-write_dta(data.rec2,paste(datapath,
-      "/Data/Stage 1/Final/Imputed_PLFS_22_match.dta",sep=""))
+write_dta(data.rec2,paste(run_path,
+      "/data/Imputed_PLFS_22_match.dta",sep=""))

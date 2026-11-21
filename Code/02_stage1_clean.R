@@ -1,7 +1,7 @@
 # Data cleaning and construction
 
 #####Prepare receiver survey##### 
-data.rec=read_dta(file.path(datapath, plfs_s1_file))
+data.rec=read_dta(file.path(input_path, plfs_s1_file))
 #create sequential IDs
 data.rec$hidseq=seq(1:nrow(data.rec))
 
@@ -41,7 +41,7 @@ data.rec=na.omit(data.rec)
 
 #####Prepare donor survey#####
 
-data.don=read_dta(file.path(datapath, hces_file))
+data.don=read_dta(file.path(input_path, hces_file))
 #create sequential Ids
 data.don$hidseq=seq(1:nrow(data.don))
 
@@ -70,4 +70,4 @@ subset(missing_report.don,PercentMissing>0)
 
 
 ### Load Excel file with states names
-states=read_excel(file.path(datapath, states_file))
+states=read_excel(file.path(input_path, states_file))

@@ -5,7 +5,7 @@ Small differences are expected with fewer simulations.
 
 ## Table 2. Poverty (%) and Gini, 2022-23 (Stage 1)
 
-Output files: `Outputs/Main/Tables/table 2 poverty.csv` and `table 2 gini.csv`.
+Output files (in the run folder): `tables/table 2 poverty.csv` and `tables/table 2 gini.csv`.
 
 | | PPP$3.0 | PPP$4.2 | PPP$8.3 | Gini |
 |---|---|---|---|---|
@@ -16,7 +16,7 @@ Figure 10 (urban, PPP$8.3): PLFS imputed 72.5, HCES 68.1.
 
 ## Figure 13 A. Poverty (%), imputed PLFS 2017-2021 (Stage 2)
 
-Output file: `Outputs/Intermediate/Poverty_trend_match_median.csv` (national rows).
+Output file (in the run folder): `tables/Poverty_trend_match_median.csv` (national rows).
 2022 is official HCES.
 
 | Line | 2017 | 2018 | 2019 | 2020 | 2021 | 2022 (HCES) |

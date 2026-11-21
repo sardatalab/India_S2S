@@ -3,14 +3,14 @@
 ####Figure 3####
 
 #2022 HCES official and PLFS abbreviated consumption density plot
-plfs=read_dta(file.path(datapath, sprintf(plfs_s2_file, anchor_year)))
+plfs=read_dta(file.path(input_path, sprintf(plfs_s2_file, anchor_year)))
 plfs$survey="PLFS"
 plfs = plfs %>%
   mutate(log_consumption_pc_adj = log(consumption_pc_adj),
          weight=weight*hh_size) %>%
   rename(welfare=log_consumption_pc_adj)
 
-hces=read_dta(file.path(datapath, hces_file))
+hces=read_dta(file.path(input_path, hces_file))
 hces$survey="HCES"
 hces = hces %>%
   rename(welfare=mpce_sp_def_ind, weight=pop_wgt) %>%
@@ -26,15 +26,15 @@ ggplot(na.omit(df), aes(x = welfare, weight = weight,
        y = "Density",
        title = "Official (HCES) and Abbreviated (PLFS) Log Consumption Aggregate (2022-23)")
 
-ggsave(paste(path,
-             "/Outputs/Main/Figures/Figure 3.png",sep=""),
+ggsave(paste(run_path,
+             "/figures/Figure 3.png",sep=""),
        width = 20, height = 10, units = "cm")
 rm(plfs,hces)
 
 ####Figure 4####
 years <- c(stage2_years, anchor_year)
 for (year in years) {
-  plfs.rec=read_dta(file.path(datapath, sprintf(plfs_s2_file, year)))
+  plfs.rec=read_dta(file.path(input_path, sprintf(plfs_s2_file, year)))
   plfs.rec$log_labor_pc_adj=log(plfs.rec$total_labor_pc_adj+1)
   plfs.rec$log_consumption_pc_adj=log(plfs.rec$consumption_pc_adj+1)
   plfs.rec$pop_wgt=with(plfs.rec,weight*hh_size)
@@ -114,8 +114,8 @@ ggplot(combined_data, aes(
     panel.grid.major.y = element_blank(),
     legend.position = "right"
   )
-ggsave(paste(path,
-         "/Outputs/Main/Figures/Figure 4.png",sep=""),
+ggsave(paste(run_path,
+         "/figures/Figure 4.png",sep=""),
        width = 25, height = 15, units = "cm")
 
 
@@ -161,8 +161,8 @@ ggplot(weighted_means_long, aes(x = as.integer(as.character(year)),
     plot.background  = element_rect(fill = "white", colour = NA)
   )
 
-ggsave(paste(path,
-             "/Outputs/Main/Figures/Figure 6.png",sep=""),
+ggsave(paste(run_path,
+             "/figures/Figure 6.png",sep=""),
        width = 25, height = 15, units = "cm")
 
 rm(combined_data)
@@ -180,8 +180,8 @@ weighted_means_wide <- weighted_means_long %>%
   ) %>%
   arrange(desc(variable))
 
-write.csv(weighted_means_wide,paste(path,
-        "/Outputs/Annex/Tables/table A 1.csv",sep=""),
+write.csv(weighted_means_wide,paste(run_path,
+        "/tables/table A 1.csv",sep=""),
         row.names = FALSE)
 
 
@@ -193,8 +193,8 @@ ggplot(data.frame(r2), aes(x = r2)) +
        title = "Disribution of R-squared in selected model across simulations")+
   theme_minimal(base_size = 10) 
 
-ggsave(paste(path,
-             "/Outputs/Main/Figures/Figure 7.png",sep=""),
+ggsave(paste(run_path,
+             "/figures/Figure 7.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 
@@ -207,8 +207,8 @@ coefs_summary <- t(apply(coefs, 1, function(x) {
   )
 }))
 
-write.csv(coefs_summary[-2,],paste(path,
-       "/Outputs/Main/Tables/table 1.csv",sep=""),
+write.csv(coefs_summary[-2,],paste(run_path,
+       "/tables/table 1.csv",sep=""),
           row.names = TRUE)
 
 ##############################
@@ -269,8 +269,8 @@ ggplot(df, aes(x = log(mpce_sp_def_ind), weight = pop_wgt,
        y = "Density",
        title = "Original and Imputed Log Consumption by Survey (2022-23)")
 
-ggsave(paste(path,
-             "/Outputs/Main/Figures/figure 8a.png",sep=""),
+ggsave(paste(run_path,
+             "/figures/figure 8a.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 ####Figure 8b####
@@ -300,8 +300,8 @@ ggplot(df_ecdf, aes(x = log(mpce_sp_def_ind), y = ecdf, color = survey)) +
   annotate("text", x = linelmic, y = 0, label = "4.2", vjust = 1.5,size=1)+
   annotate("text", x = lineumic, y = 0, label = "8.3", vjust = 1.5,size=1)
 
-ggsave(paste(path,
-        "/Outputs/Main/Figures/figure 8b.png",sep=""),
+ggsave(paste(run_path,
+        "/figures/figure 8b.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 
@@ -314,16 +314,16 @@ gini1= gini.wtd(df[df$survey=="HCES",]$mpce_sp_def_ind,
 gini2 = gini.wtd(df[df$survey=="PLFS",]$mpce_sp_def_ind,
          df[df$survey=="PLFS",]$pop_wgt)
 tab = data.frame(survey=c("HCES","PLFS"),gini=c(gini1,gini2))
-write.csv(tab,paste(path,
-   "/Outputs/Main/Tables/table 2 gini.csv",sep=""))
+write.csv(tab,paste(run_path,
+   "/tables/table 2 gini.csv",sep=""))
 
 
 #Overall Poverty
 tab1=svyby(~povlic+povlmic+povumic, ~survey, design=svydf, svymean,
            na.rm=TRUE,vartype = "ci")
 
-write.csv(tab1,paste(path,
-       "/Outputs/Main/Tables/table 2 poverty.csv",sep=""))
+write.csv(tab1,paste(run_path,
+       "/tables/table 2 poverty.csv",sep=""))
 
 ### Figure 10####
 
@@ -388,8 +388,8 @@ ggplot(plot_data, aes(x = survey, y = mean, fill = survey)) +
   theme_minimal() +
   theme(legend.position = "none")
 
-ggsave(paste(path,
-             "/Outputs/Main/Figures/figure 10.png",sep=""),
+ggsave(paste(run_path,
+             "/figures/figure 10.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 
@@ -408,8 +408,8 @@ tab3_wide_lic$PLFS=100*tab3_wide_lic$PLFS
 tab3_wide_lic$Diff=with(tab3_wide_lic,PLFS-HCES)
 
 #save table
-write.csv(tab3_wide_lic,paste(path,
-       "/Outputs/Intermediate/state_pov_lic_w.csv",sep=""))
+write.csv(tab3_wide_lic,paste(run_path,
+       "/tables/state_pov_lic_w.csv",sep=""))
 
 #ranking plot
 tab3_wide_lic <- tab3_wide_lic %>%
@@ -438,8 +438,8 @@ ggplot(tab3_wide_lic, aes(x = hces_rank, y = plfs_rank)) +
   theme(
     axis.text = element_text(size = 8)   # Reduce axis text size
   )
-ggsave(paste(path,
-             "/Outputs/Intermediate/State Ranking lic.png",sep=""),
+ggsave(paste(run_path,
+             "/figures/State Ranking lic.png",sep=""),
        width = 20, height = 20, units = "cm")
 
 # LMIC
@@ -454,8 +454,8 @@ tab3_wide_lmic$HCES=100*tab3_wide_lmic$HCES
 tab3_wide_lmic$PLFS=100*tab3_wide_lmic$PLFS
 tab3_wide_lmic$Diff=with(tab3_wide_lmic,PLFS-HCES)
 
-write.csv(tab3_wide_lmic,paste(path,
-                "/Outputs/Intermediate/state_pov_lmic_w.csv",sep=""))
+write.csv(tab3_wide_lmic,paste(run_path,
+                "/tables/state_pov_lmic_w.csv",sep=""))
 #ranking plot
 tab3_wide_lmic <- tab3_wide_lmic %>%
   mutate(
@@ -483,8 +483,8 @@ ggplot(tab3_wide_lmic, aes(x = hces_rank, y = plfs_rank)) +
   theme(
     axis.text = element_text(size = .5)   # Reduce axis text size
   )
-ggsave(paste(path,
-             "/Outputs/Annex/Figures/Figure B1 panel B.png",sep=""),
+ggsave(paste(run_path,
+             "/figures/Figure B1 panel B.png",sep=""),
        width = 20, height = 20, units = "cm")
 
 #Barplots
@@ -499,8 +499,8 @@ ggplot(tab3, aes(y = as.factor(state_name), x = statistic.povlic, fill = survey)
        title = "Actual and imputed poverty rates by state") +
   xlim(c(0,40))+
 theme_minimal()
-ggsave(paste(path,
-             "/Outputs/Intermediate/Poverty State lic.png",sep=""),
+ggsave(paste(run_path,
+             "/figures/Poverty State lic.png",sep=""),
        width = 30, height = 20, units = "cm")
 
 # LMIC
@@ -519,145 +519,6 @@ ggplot(tab3, aes(
   ) +
   xlim(c(0,75))+
   theme_minimal()
-ggsave(paste(path,
-             "/Outputs/Annex/Figures/Figure B1 panel A.png",sep=""),
+ggsave(paste(run_path,
+             "/figures/Figure B1 panel A.png",sep=""),
        width = 30, height = 20, units = "cm")
-
-
-####################
-#Density plot of ratio 
-#plfs.don is here the harmonized PLFS 2022 with all common variables between the
-#different rounds of the PLFS to be used in stage 2
-plfs.don=read_dta(file.path(datapath, sprintf(plfs_s2_file, anchor_year)))
-#We bring the dataset containing the imputed consumption
-plfs.imp=read_dta(paste(datapath,
-          "/Data/Stage 1/Final/Imputed_PLFS_22_match.dta",sep=""))
-plfs.imp=subset(plfs.imp,select=c(hhid,mpce_sp_def_ind))
-plfs.don=merge(plfs.don,plfs.imp,by="hhid",all.x=TRUE)
-rm(plfs.imp)
-plfs.don=subset(plfs.don,!is.na(mpce_sp_def_ind))
-#The ratio is calculated by dividing the imputed consumption by the
-#previously deflated and temporaly adjusted 
-#abbreviated consumption available in the PLFS.
-plfs.don$ratio = with(plfs.don,
-                      mpce_sp_def_ind/consumption_pc_adj)
-
-### Figure 12####
-
-#Ridge plot
-
-#Quintiles of imputed consumption
-plfs.don$quintile=xtile(plfs.don$mpce_sp_def_ind,n=5,wt=plfs.don$weight)
-plfs.don$quintile=as.factor(plfs.don$quintile)
-plfs.don$pop_wgt=with(plfs.don,hh_size * weight)
-
-ggplot(plfs.don, aes(x = ratio, y = fct_rev(quintile), 
-                     weight = pop_wgt, fill = quintile)) +
-  geom_density_ridges(alpha = 0.5, scale = 1.5, rel_min_height = 0.01) +
-  labs(x = "Ratio",
-       y = "Quintile",
-       title = "Ridgeline Plot of MMRP to Abbreviate Consumption (2022-23)") +
-  xlim(c(0, 7.5)) +
-  theme_ridges() + 
-  theme(legend.position = "none") 
-ggsave(paste(path,
-    "/Outputs/Main/Figures/Figure 12.png",sep=""),
-       width = 30, height = 20, units = "cm")
-
-
-#### Figure B4####
-
-#HEATMAP OF DECILES
-
-plfs.don$decile_mmrp=xtile(plfs.don$mpce_sp_def_ind,n=10,wt=plfs.don$pop_wgt)
-plfs.don$decile_abbr=xtile(plfs.don$consumption_pc_adj,n=10,wt=plfs.don$pop_wgt)
-
-des <- svydesign(ids = ~1, weights = ~pop_wgt, data = plfs.don)
-
-#Cross-tabulate weighted counts
-tab <- svytable(~decile_mmrp + decile_abbr, design = des)
-heatmap_data <- as.data.frame(tab)
-
-heatmap_data <- heatmap_data %>%
-  mutate(rel_freq = Freq / sum(Freq))
-
-#Plot heatmap
-ggplot(heatmap_data, aes(x = decile_mmrp, y = decile_abbr, fill = rel_freq)) +
-  geom_tile(color = "white") +
-  #geom_text(aes(label = percent(rel_freq, accuracy = .1)), color = "white", size = 3) +
-  scale_fill_viridis_c(
-    option = "mako",
-    labels = percent_format(accuracy = 1)
-  ) +
-  labs(
-    title = "Cross-Decile Heatmap",
-    x = "Deciles of imputed consumption",
-    y = "Deciles of abbreviated consumption",
-    fill = "Proportion of population"
-  ) +
-  theme_minimal()
-ggsave(paste(path,
-        "/Outputs/Annex/Figures/Figure B4.png",sep=""),
-       width = 30, height = 20, units = "cm")
-
-
-#### Figure 9####
-
-plfs = plfs.don %>%
-  mutate(welfare = log(mpce_sp_def_ind),
-         weight=pop_wgt,
-         survey="PLFS",
-         ventile=xtile(welfare,n=20,wt=weight)) 
-
-hces=read_dta(file.path(datapath, hces_file))
-hces$survey="HCES"
-hces = hces %>%
-  rename(welfare=mpce_sp_def_ind, weight=pop_wgt) %>%
-  mutate(welfare=log(welfare),
-         ventile=xtile(welfare,n=20,wt=weight))
-
-df=rbind(subset(hces,select=c(survey,welfare,weight,ventile)),
-         subset(plfs,select=c(survey,welfare,weight,ventile)))
-
-# Dumbell plot
-
-# 1) Weighted mean welfare by ventile & survey
-avg_by_ventile <- df %>%
-  group_by(survey, ventile) %>%
-  summarise(mean_welfare = weighted.mean(welfare, weight, na.rm = TRUE),
-            .groups = "drop")
-
-# 2) Wide form and difference (HCES − PLFS)
-wide_ventiles <- avg_by_ventile %>%
-  pivot_wider(names_from = survey, values_from = mean_welfare) %>%
-  mutate(diff = HCES - PLFS,
-         diff_abs = abs(diff),
-         xmid = (PLFS + HCES)/2)
-
-#plot
-ggplot(wide_ventiles, aes(y = ventile)) +
-  # connecting line
-  geom_segment(aes(x = PLFS, xend = HCES, yend = ventile),
-               linewidth = 1, alpha = 0.6, color = "gray60") +
-  # PLFS points
-  geom_point(aes(x = PLFS, color = "PLFS"), size = 3) +
-  # HCES points
-  geom_point(aes(x = HCES, color = "HCES"), size = 3) +
-  # label with differences
-  geom_text(aes(x = xmid, label = sprintf("Δ=%.3f", diff)),
-            vjust = -0.6, size = 3) +
-  # survey colors
-  scale_color_manual(values = c("PLFS" = "cyan", "HCES" = "salmon"),
-                     name = "Survey") +
-  scale_y_continuous(breaks = 1:20) +
-  labs(
-    title = "Average Log Consumption by Ventile: HCES (official) vs PLFS (imputed)",
-    x = "Average Log Consumption", y = "Ventile"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(panel.grid.minor = element_blank())
-
-ggsave(paste(path,
-    "/Outputs/Main/Figures/Figure 9.png",sep=""),
-       width = 25, height = 15, units = "cm")
-

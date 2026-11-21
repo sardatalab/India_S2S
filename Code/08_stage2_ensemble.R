@@ -10,10 +10,10 @@ pov_results <- foreach (year = years, .combine = "rbind",
 .packages = c("survey", "haven","dplyr","tidyr","dineq")) %dopar% {
   
   #Load PLFS data
-  plfs.rec=read_dta(file.path(datapath, sprintf(plfs_s2_file, year)))
+  plfs.rec=read_dta(file.path(input_path, sprintf(plfs_s2_file, year)))
   #Load simulations results
-  df=readRDS(file=paste(datapath,
-            "/Data/Stage 2/Final/Simulations_model_",use_mod,"_",year,".rds",sep=""))
+  df=readRDS(file=paste(run_path,
+            "/data/Simulations_model_",use_mod,"_",year,".rds",sep=""))
   #only for geometric_mean
   if (use_stat=="geometric_mean") {
     df[df <= 0] <- NA
@@ -34,11 +34,11 @@ pov_results <- foreach (year = years, .combine = "rbind",
                  by="hhid",all.x = TRUE)
   data.rec$pop_wgt = with(data.rec,weight*hh_size)
   ##Enable when ready to save final results
-  write_dta(data.rec,paste0(datapath,
-        "/Data/Stage 2/Final/IND_",year,"_PLFS_imputed_ratio_",sim,
+  write_dta(data.rec,paste0(run_path,
+        "/data/IND_",year,"_PLFS_imputed_ratio_",sim,
                 "_",use_stat,".dta"))
   data.rec = subset(data.rec,!is.na(mpce_sp_def_ind))
-  #prices and poverty lines come from the exercise config (cpi21, icp21, lic, lmic, umic)
+  #prices and poverty lines come from section 3 of RUN_S2S.R (cpi21, icp21, lic, lmic, umic)
   data.rec$povlic = ifelse(data.rec$mpce_sp_def_ind*(12/365)/cpi21/icp21<lic,1,0)
   data.rec$povlmic = ifelse(data.rec$mpce_sp_def_ind*(12/365)/cpi21/icp21<lmic,1,0)
   data.rec$povumic = ifelse(data.rec$mpce_sp_def_ind*(12/365)/cpi21/icp21<umic,1,0)
@@ -98,14 +98,14 @@ stopCluster(cl)
 
 # Bring official numbers for the anchor year
 
-plfs=read_dta(file.path(datapath, sprintf(plfs_s2_file, anchor_year)))
+plfs=read_dta(file.path(input_path, sprintf(plfs_s2_file, anchor_year)))
 plfs$survey="PLFS"
 plfs = plfs %>%
   mutate( weight=weight*hh_size) %>%
   rename(welfare=consumption_pc_adj) %>%
   filter(!is.na(weight))
 
-hces=read_dta(file.path(datapath, hces_file))
+hces=read_dta(file.path(input_path, hces_file))
 hces$survey="HCES"
 hces = hces %>%
   rename(welfare=mpce_sp_def_ind, 
@@ -150,8 +150,8 @@ pov_2022=data.frame(sect=c("national","rural","urban"),
 tab_export=bind_rows(pov_results,pov_2022)
 row.names(tab_export)=NULL
 # Export table with outputs
-write.csv(tab_export,file=paste(path,
-        "/Outputs/Intermediate/Poverty_trend_",use_mod,"_",use_stat,".csv",
+write.csv(tab_export,file=paste(run_path,
+        "/tables/Poverty_trend_",use_mod,"_",use_stat,".csv",
                        sep=""))
 
-rm(hces,plfs,plfs.don,plfs.rec,data.don,data.rec,data.rec2)
+rm(hces,plfs,plfs.rec,data.don,data.rec,data.rec2)   #plfs.don is kept for the figures of 09

@@ -28,8 +28,8 @@ ggplot(povrates, aes(x = year, y = national * 100, color = line)) +
   ylim(c(0, 100)) +
   theme_minimal()
 
-ggsave(paste(path,
-      "/Outputs/Main/Figures/Figure 13 A.png",sep=""),
+ggsave(paste(run_path,
+      "/figures/Figure 13 A.png",sep=""),
        width = 20, height = 12, units = "cm")
 
 
@@ -54,8 +54,8 @@ ggplot(ginis[ginis$sect=="national",],
        x = "Year", y = "Gini Coefficient") +
     theme_minimal()
 
-ggsave(paste(path,
-             "/Outputs/Main/Figures/Figure 13 B.png",sep=""),
+ggsave(paste(run_path,
+             "/figures/Figure 13 B.png",sep=""),
        width = 20, height = 12, units = "cm")
 
 ####Figure 14####
@@ -83,8 +83,8 @@ p3 <- ggplot(povrates, aes(x = year, y = urban*100, color = line)) +
 # Side by side
 p2 + p3
 
-ggsave(paste(path,
-          "/Outputs/Main/Figures/Figure 14.png",sep=""),
+ggsave(paste(run_path,
+          "/figures/Figure 14.png",sep=""),
        width = 25, height = 15, units = "cm")
 
 
@@ -93,7 +93,7 @@ ggsave(paste(path,
 ########
 
 #load HCES
-hces=read_dta(file.path(datapath, hces_file))
+hces=read_dta(file.path(input_path, hces_file))
 # state_vars <- paste0("state_", 1:37)
 # state_vars = state_vars[-26] # State 26 does not exist
 # #Regroup state dummies
@@ -127,9 +127,9 @@ tab2 = tab2 %>% rename(Sector=urb)
 tab2
 
 #load PLFS 22
-plfs=read_dta(file.path(datapath, sprintf(plfs_s2_file, anchor_year)))
-plfs.imp=read_dta(paste(datapath,
-              "/Data/Stage 1/Final/Imputed_PLFS_22_match.dta",sep=""))
+plfs=read_dta(file.path(input_path, sprintf(plfs_s2_file, anchor_year)))
+plfs.imp=read_dta(paste(run_path,
+              "/data/Imputed_PLFS_22_match.dta",sep=""))
 plfs.imp=subset(plfs.imp,select=c(hhid,mpce_sp_def_ind))
 plfs=merge(plfs,plfs.imp,by="hhid",all.x=TRUE)
 rm(plfs.imp)
@@ -142,8 +142,8 @@ plfs$log_abbr=with(plfs,log(consumption_pc_adj))
 
 #correlation plot between the two log aggregates in plfs 2022
 ggpairs(plfs[, c("log_mpce", "log_abbr")])
-ggsave(paste(path,
-             "/Outputs/Annex/Figures/Figure B 3.png",sep=""),
+ggsave(paste(run_path,
+             "/figures/Figure B 3.png",sep=""),
        width = 20, height = 20, units = "cm")
 
 #Abbreviated consumption in 2021 PPP
@@ -191,7 +191,7 @@ pov_results <- foreach (year = years, .combine = "rbind",
  .export   = c("q_vals","cpi21","icp21","lic","lmic","umic")) %dopar% {
                           
   #Load PLFS data
-  data.rec=read_dta(file.path(datapath, sprintf(plfs_s2_file, year)))
+  data.rec=read_dta(file.path(input_path, sprintf(plfs_s2_file, year)))
   data.rec$pop_wgt = with(data.rec,weight*hh_size)
   data.rec = subset(data.rec,!is.na(consumption_pc_adj) & !is.na(pop_wgt))
   #poverty with intl lines
@@ -230,8 +230,8 @@ pov_results = pov_results %>%
 pov_results$international=100*pov_results$international
 pov_results$endogenous=100*pov_results$endogenous
 
-write.csv(pov_results,file=paste(path,
-    "/Outputs/Intermediate/Poverty_trends_only_PLFS.csv",sep=""))
+write.csv(pov_results,file=paste(run_path,
+    "/tables/Poverty_trends_only_PLFS.csv",sep=""))
 
 
 
@@ -257,8 +257,8 @@ p2 <- ggplot(pov_results, aes(x = year, y = endogenous, color = line)) +
 # Side by side
 p1 + p2
 
-ggsave(paste(path,
-   "/Outputs/Annex/Figures/Figure D 1.png",sep=""),
+ggsave(paste(run_path,
+   "/figures/Figure D 1.png",sep=""),
        width = 25, height = 15, units = "cm")
 
 
@@ -274,7 +274,7 @@ pov_results_sec <- foreach (year = years, .combine = "rbind",
   .export   = c("q_vals","cpi21","icp21","lic","lmic","umic")) %dopar% {
                           
   #Load PLFS data
-  data.rec=read_dta(file.path(datapath, sprintf(plfs_s2_file, year)))
+  data.rec=read_dta(file.path(input_path, sprintf(plfs_s2_file, year)))
   data.rec$pop_wgt = with(data.rec,weight*hh_size)
   data.rec = subset(data.rec,!is.na(consumption_pc_adj) & !is.na(pop_wgt))
 
@@ -331,8 +331,8 @@ pov_results_sec = pov_results_sec %>%
 pov_results_sec$international=100*pov_results_sec$international
 pov_results_sec$endogenous=100*pov_results_sec$endogenous
 
-write.csv(pov_results,file=paste(path,
-        "/Outputs/Intermediate/Poverty_trends_only_PLFS_sector.csv",sep=""))
+write.csv(pov_results,file=paste(run_path,
+        "/tables/Poverty_trends_only_PLFS_sector.csv",sep=""))
 
 
 #First plot: intl line
@@ -361,6 +361,132 @@ p2 <- ggplot(pov_results_sec, aes(x = year, y = endogenous, color = line)) +
 combined <- p1 / p2
 
 # Save to file
-ggsave(paste0(path,
-              "/Outputs/Annex/Figures/Figure D 2.png"),
+ggsave(paste0(run_path,
+              "/figures/Figure D 2.png"),
        combined, width = 25, height = 30, units = "cm")
+
+
+########
+#Figures of the ratio and of the Stage 1 imputed consumption in the PLFS (moved from
+#05_stage1_outputs.R: they use the Stage 2 donor built in 06_stage2_clean.R)
+########
+
+### Figure 12####
+
+#Ridge plot
+
+#Quintiles of imputed consumption
+plfs.don$quintile=xtile(plfs.don$mpce_sp_def_ind,n=5,wt=plfs.don$weight)
+plfs.don$quintile=as.factor(plfs.don$quintile)
+plfs.don$pop_wgt=with(plfs.don,hh_size * weight)
+
+ggplot(plfs.don, aes(x = ratio, y = fct_rev(quintile), 
+                     weight = pop_wgt, fill = quintile)) +
+  geom_density_ridges(alpha = 0.5, scale = 1.5, rel_min_height = 0.01) +
+  labs(x = "Ratio",
+       y = "Quintile",
+       title = "Ridgeline Plot of MMRP to Abbreviate Consumption (2022-23)") +
+  xlim(c(0, 7.5)) +
+  theme_ridges() + 
+  theme(legend.position = "none") 
+ggsave(paste(run_path,
+    "/figures/Figure 12.png",sep=""),
+       width = 30, height = 20, units = "cm")
+
+
+#### Figure B4####
+
+#HEATMAP OF DECILES
+
+plfs.don$decile_mmrp=xtile(plfs.don$mpce_sp_def_ind,n=10,wt=plfs.don$pop_wgt)
+plfs.don$decile_abbr=xtile(plfs.don$consumption_pc_adj,n=10,wt=plfs.don$pop_wgt)
+
+des <- svydesign(ids = ~1, weights = ~pop_wgt, data = plfs.don)
+
+#Cross-tabulate weighted counts
+tab <- svytable(~decile_mmrp + decile_abbr, design = des)
+heatmap_data <- as.data.frame(tab)
+
+heatmap_data <- heatmap_data %>%
+  mutate(rel_freq = Freq / sum(Freq))
+
+#Plot heatmap
+ggplot(heatmap_data, aes(x = decile_mmrp, y = decile_abbr, fill = rel_freq)) +
+  geom_tile(color = "white") +
+  #geom_text(aes(label = percent(rel_freq, accuracy = .1)), color = "white", size = 3) +
+  scale_fill_viridis_c(
+    option = "mako",
+    labels = percent_format(accuracy = 1)
+  ) +
+  labs(
+    title = "Cross-Decile Heatmap",
+    x = "Deciles of imputed consumption",
+    y = "Deciles of abbreviated consumption",
+    fill = "Proportion of population"
+  ) +
+  theme_minimal()
+ggsave(paste(run_path,
+        "/figures/Figure B4.png",sep=""),
+       width = 30, height = 20, units = "cm")
+
+
+#### Figure 9####
+
+plfs = plfs.don %>%
+  mutate(welfare = log(mpce_sp_def_ind),
+         weight=pop_wgt,
+         survey="PLFS",
+         ventile=xtile(welfare,n=20,wt=weight)) 
+
+hces=read_dta(file.path(input_path, hces_file))
+hces$survey="HCES"
+hces = hces %>%
+  rename(welfare=mpce_sp_def_ind, weight=pop_wgt) %>%
+  mutate(welfare=log(welfare),
+         ventile=xtile(welfare,n=20,wt=weight))
+
+df=rbind(subset(hces,select=c(survey,welfare,weight,ventile)),
+         subset(plfs,select=c(survey,welfare,weight,ventile)))
+
+# Dumbell plot
+
+# 1) Weighted mean welfare by ventile & survey
+avg_by_ventile <- df %>%
+  group_by(survey, ventile) %>%
+  summarise(mean_welfare = weighted.mean(welfare, weight, na.rm = TRUE),
+            .groups = "drop")
+
+# 2) Wide form and difference (HCES − PLFS)
+wide_ventiles <- avg_by_ventile %>%
+  pivot_wider(names_from = survey, values_from = mean_welfare) %>%
+  mutate(diff = HCES - PLFS,
+         diff_abs = abs(diff),
+         xmid = (PLFS + HCES)/2)
+
+#plot
+ggplot(wide_ventiles, aes(y = ventile)) +
+  # connecting line
+  geom_segment(aes(x = PLFS, xend = HCES, yend = ventile),
+               linewidth = 1, alpha = 0.6, color = "gray60") +
+  # PLFS points
+  geom_point(aes(x = PLFS, color = "PLFS"), size = 3) +
+  # HCES points
+  geom_point(aes(x = HCES, color = "HCES"), size = 3) +
+  # label with differences
+  geom_text(aes(x = xmid, label = sprintf("Δ=%.3f", diff)),
+            vjust = -0.6, size = 3) +
+  # survey colors
+  scale_color_manual(values = c("PLFS" = "cyan", "HCES" = "salmon"),
+                     name = "Survey") +
+  scale_y_continuous(breaks = 1:20) +
+  labs(
+    title = "Average Log Consumption by Ventile: HCES (official) vs PLFS (imputed)",
+    x = "Average Log Consumption", y = "Ventile"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(panel.grid.minor = element_blank())
+
+ggsave(paste(run_path,
+    "/figures/Figure 9.png",sep=""),
+       width = 25, height = 15, units = "cm")
+

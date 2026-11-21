@@ -1,45 +1,8 @@
+### Stage 2, simulations: trains the models on the donor (PLFS anchor year, built in
+### 06_stage2_clean.R) in train_year and applies them to the other PLFS rounds.
 
 #number of simulations
 sim=nsim2
-
-#Additional data cleaning & construction
-
-#create sequential Ids
-plfs.don$hidseq=seq(1:nrow(plfs.don))
-#Create quintiles of abbreviated consumption
-#plfs.don$qtil=xtile(plfs.don$consumption_pc_adj,n=5,wt=plfs.don$weight)
-plfs.don$hh_type <- as.factor(plfs.don$hh_type)
-plfs.don$state <- as.factor(plfs.don$state)
-plfs.don$hhb_year=with(plfs.don,anchor_year-hh_head_age)
-plfs.don$hh_head_age_sq = with(plfs.don,hh_head_age^2)
-plfs.don$hh_size_sq = with(plfs.don,hh_size^2)
-plfs.don$log_labor_pc_adj=log(plfs.don$total_labor_pc_adj+1)
-plfs.don$log_consumption_pc_adj=log(plfs.don$consumption_pc_adj+1)
-#Drop dummies for state and hhtype
-plfs.don <- plfs.don %>% 
-  mutate(across(
-    c(hh_sh_job_contract, hh_sh_paidleave, hh_sh_pension, 
-      hh_sh_gratuity, hh_sh_health),
-    ~ if_else(flag5_all_lab == 1 & is.na(.x), 0, .x)
-  )) %>%
-  select(-starts_with("state_"))  %>% 
-  select(-starts_with("hhtype_")) %>%
-  select(-starts_with("hh_sp_")) %>%
-  select(-starts_with("hh_size_age")) %>%
-  select(-c(hh_sex_ratio,flag2_sex,hh_dep_ratio,flag1_depen,
-            hh_sh1564_lit,flag3_spouse,
-            hh_head_job_contract,hh_head_paidleave,
-            hh_head_pension,hh_head_gratuity,
-            hh_head_health, flag4_head_lab,
-            hh_sh_age0,hh_sh_age1,hh_sh_age2,hh_sh_age3,
-            hh_sh_age4,flag5_all_lab,hh_head_ilit,hh_sh_ilit,
-            hh_sh_female))
-# Missing values report
-missing_report.don <- plfs.don %>%
-  summarise(across(everything(), ~ mean(is.na(.)) * 100)) %>%
-  pivot_longer(cols = everything(), 
-               names_to = "Variable", values_to = "PercentMissing")
-subset(missing_report.don,PercentMissing>0)
 
 set.seed(seed)
 
@@ -49,36 +12,11 @@ set.seed(seed)
 #We train models on the anchor year (donor) data only in the first year
 year=train_year
 #####Prepare receiver survey##### 
-plfs.rec=read_dta(file.path(datapath, sprintf(plfs_s2_file, year)))
+plfs.rec=read_dta(file.path(input_path, sprintf(plfs_s2_file, year)))
 #create sequential IDs
 plfs.rec$hidseq=seq(1:nrow(plfs.rec))
 plfs.rec=subset(plfs.rec,!is.na(consumption_pc_adj))
-plfs.rec$hh_type <- as.factor(plfs.rec$hh_type)
-plfs.rec$state <- as.factor(plfs.rec$state)
-plfs.rec$hhb_year=with(plfs.rec,year-hh_head_age)
-plfs.rec$hh_head_age_sq = with(plfs.rec,hh_head_age^2)
-plfs.rec$hh_size_sq = with(plfs.rec,hh_size^2)
-plfs.rec$log_labor_pc_adj=log(plfs.rec$total_labor_pc_adj+1)
-plfs.rec$log_consumption_pc_adj=log(plfs.rec$consumption_pc_adj+1)
-#Drop dummies for state and hhtype
-plfs.rec <- plfs.rec %>% 
-  mutate(across(
-    c(hh_sh_job_contract, hh_sh_paidleave, hh_sh_pension, 
-      hh_sh_gratuity, hh_sh_health),
-    ~ if_else(flag5_all_lab == 1 & is.na(.x), 0, .x)
-  )) %>%
-  select(-starts_with("state_"))  %>% 
-  select(-starts_with("hhtype_")) %>%
-  select(-starts_with("hh_sp_")) %>%
-  select(-starts_with("hh_size_age")) %>%
-  select(-c(hh_sex_ratio,flag2_sex,hh_dep_ratio,flag1_depen,
-            hh_sh1564_lit,flag3_spouse,
-            hh_head_job_contract,hh_head_paidleave,
-            hh_head_pension,hh_head_gratuity,
-            hh_head_health, flag4_head_lab,
-            hh_sh_age0,hh_sh_age1,hh_sh_age2,hh_sh_age3,
-            hh_sh_age4,flag5_all_lab,hh_head_ilit,hh_sh_ilit,
-            hh_sh_female))
+plfs.rec=prep_plfs_s2(plfs.rec, year)   #variables of the Stage 2 models (06_stage2_clean.R)
 
 # Missing values report
 missing_report.rec <- plfs.rec %>%
@@ -234,18 +172,18 @@ foreach (a = c(0,1)) %do% {  # 0: HHs with income information, 1 otherwise
       Yb<-predict(lasso_best1, newx=X.newb, s=best.lambda1)
       coef_temp = data.frame(as.matrix(coefficients(lasso_best1)))
       Ya=predict(lasso_best1, newx=X.a, s=best.lambda1)
-      save(lasso_best1, file=paste(path,
-            "/Outputs/Intermediate/Models/Mod_",a,"_",j,sep=""))
-      save(best.lambda1, file=paste(path,
-            "/Outputs/Intermediate/Models/Lambda_",a,"_",j,sep=""))
+      save(lasso_best1, file=paste(run_path,
+            "/models/Mod_",a,"_",j,sep=""))
+      save(best.lambda1, file=paste(run_path,
+            "/models/Lambda_",a,"_",j,sep=""))
     } else {
       Yb<-predict(lasso_best2, newx=X.newb, s=best.lambda2)
       coef_temp = data.frame(as.matrix(coefficients(lasso_best2)))
       Ya=predict(lasso_best2, newx=X.a, s=best.lambda2)
-      save(lasso_best2, file=paste(path,
-                 "/Outputs/Intermediate/Models/Mod_",a,"_",j,sep=""))
-      save(best.lambda2, file=paste(path,
-                 "/Outputs/Intermediate/Models/Lambda_",a,"_",j,sep=""))
+      save(lasso_best2, file=paste(run_path,
+                 "/models/Mod_",a,"_",j,sep=""))
+      save(best.lambda2, file=paste(run_path,
+                 "/models/Lambda_",a,"_",j,sep=""))
     }
     
     #Best model coefficients  
@@ -311,36 +249,36 @@ df.pred <- do.call(rbind, df.sim.pred)
 
 #save simulations results
 #R-squared
-write.csv(r2.tot,file=paste(path,
-            "/Outputs/Intermediate/Models/Simulations_R2.csv",sep=""),
+write.csv(r2.tot,file=paste(run_path,
+            "/models/Simulations_R2.csv",sep=""),
           row.names = FALSE)
 #Model used
-write.csv(md.tot,file=paste(path,
-              "/Outputs/Intermediate/Models/Simulations_model_used.csv",sep=""),
+write.csv(md.tot,file=paste(run_path,
+              "/models/Simulations_model_used.csv",sep=""),
           row.names = FALSE)
 
 #Ensemble coefficients
 coef.tot$coef=apply(coef.tot, 1,mean,na.rm=TRUE)
 
-write.csv(coef.tot,file=paste(path,
-         "/Outputs/Intermediate/Models/Models_coefficients.csv",sep=""),
+write.csv(coef.tot,file=paste(run_path,
+         "/models/Models_coefficients.csv",sep=""),
           row.names = TRUE)
 
 #Simulation results
-write.csv(df.match,file=paste(datapath,
-                "/Data/Stage 2/Final/Simulations_model_match_",year,
+write.csv(df.match,file=paste(run_path,
+                "/data/Simulations_model_match_",year,
                 ".csv",sep=""),
           row.names = FALSE)
-saveRDS(df.match,file=paste(datapath,
-                   "/Data/Stage 2/Final/Simulations_model_match_",
+saveRDS(df.match,file=paste(run_path,
+                   "/data/Simulations_model_match_",
                             year,".rds",sep=""))
 
-write.csv(df.pred,file=paste(datapath,
-                   "/Data/Stage 2/Final/Simulations_model_pred_",year,
+write.csv(df.pred,file=paste(run_path,
+                   "/data/Simulations_model_pred_",year,
                       ".csv",sep=""),
           row.names = FALSE)
-saveRDS(df.pred,file=paste(datapath,
-              "/Data/Stage 2/Final/Simulations_model_pred_",year,
+saveRDS(df.pred,file=paste(run_path,
+              "/data/Simulations_model_pred_",year,
                     ".rds",sep=""))
 rm(year,df.match,df.pred,plfs.rec)
 #############
@@ -358,40 +296,15 @@ foreach (year = years,
                        "glmnet", "useful", "data.table", "haven", 
                        "statar", "dplyr", "tidyr", "dineq", "convey",
                        "parallel","foreach"),
-         .export   = c("plfs.don","path","sim",
+         .export   = c("plfs.don","run_path","sim",
                        "compute_r_squared")) %dopar% {
 
 #####Prepare receiver survey##### 
-plfs.rec=read_dta(file.path(datapath, sprintf(plfs_s2_file, year)))
+plfs.rec=read_dta(file.path(input_path, sprintf(plfs_s2_file, year)))
 #create sequential IDs
 plfs.rec$hidseq=seq(1:nrow(plfs.rec))
 plfs.rec=subset(plfs.rec,!is.na(consumption_pc_adj))
-plfs.rec$hh_type <- as.factor(plfs.rec$hh_type)
-plfs.rec$state <- as.factor(plfs.rec$state)
-plfs.rec$hhb_year=with(plfs.rec,year-hh_head_age)
-plfs.rec$hh_head_age_sq = with(plfs.rec,hh_head_age^2)
-plfs.rec$hh_size_sq = with(plfs.rec,hh_size^2)
-plfs.rec$log_labor_pc_adj=log(plfs.rec$total_labor_pc_adj+1)
-plfs.rec$log_consumption_pc_adj=log(plfs.rec$consumption_pc_adj+1)
-#Drop dummies for state and hhtype
-plfs.rec <- plfs.rec %>% 
-  mutate(across(
-    c(hh_sh_job_contract, hh_sh_paidleave, hh_sh_pension, 
-      hh_sh_gratuity, hh_sh_health),
-    ~ if_else(flag5_all_lab == 1 & is.na(.x), 0, .x)
-  )) %>%
-  select(-starts_with("state_"))  %>% 
-  select(-starts_with("hhtype_")) %>%
-  select(-starts_with("hh_sp_")) %>%
-  select(-starts_with("hh_size_age")) %>%
-  select(-c(hh_sex_ratio,flag2_sex,hh_dep_ratio,flag1_depen,
-            hh_sh1564_lit,flag3_spouse,
-            hh_head_job_contract,hh_head_paidleave,
-            hh_head_pension,hh_head_gratuity,
-            hh_head_health, flag4_head_lab,
-            hh_sh_age0,hh_sh_age1,hh_sh_age2,hh_sh_age3,
-            hh_sh_age4,flag5_all_lab,hh_head_ilit,hh_sh_ilit,
-            hh_sh_female))
+plfs.rec=prep_plfs_s2(plfs.rec, year)   #variables of the Stage 2 models (06_stage2_clean.R)
 
 # Missing values report
 missing_report.rec <- plfs.rec %>%
@@ -494,8 +407,8 @@ inc_vars = c("shr_regwages","shr_caswages","shr_selfinc",
         
         X.newb =X.samp.b
         X.a =X.samp.a
-        lasso_best=load(file=paste(path,
-                                   "/Outputs/Intermediate/Models/Mod_",a,"_",j,
+        lasso_best=load(file=paste(run_path,
+                                   "/models/Mod_",a,"_",j,
                                    sep=""))
         if (lasso_best=="lasso_best1"){
           predictor_names <- setdiff(rownames(coef(lasso_best1)), "(Intercept)")
@@ -574,20 +487,20 @@ inc_vars = c("shr_regwages","shr_caswages","shr_selfinc",
     
     #save simulations results
 
-    write.csv(df.match,file=paste(datapath,
-                       "/Data/Stage 2/Final/Simulations_model_match_",
+    write.csv(df.match,file=paste(run_path,
+                       "/data/Simulations_model_match_",
                                   year,".csv",sep=""),
               row.names = FALSE)
-    saveRDS(df.match,file=paste(datapath,
-                      "/Data/Stage 2/Final/Simulations_model_match_",
+    saveRDS(df.match,file=paste(run_path,
+                      "/data/Simulations_model_match_",
                                 year,".rds",sep=""))
     
-    write.csv(df.pred,file=paste(datapath,
-                    "/Data/Stage 2/Final/Simulations_model_pred_",
+    write.csv(df.pred,file=paste(run_path,
+                    "/data/Simulations_model_pred_",
                                  year,".csv",sep=""),
               row.names = FALSE)
-    saveRDS(df.pred,file=paste(datapath,
-                    "/Data/Stage 2/Final/Simulations_model_pred_",
+    saveRDS(df.pred,file=paste(run_path,
+                    "/data/Simulations_model_pred_",
                                year,".rds",sep=""))
     
 } #end year loop
