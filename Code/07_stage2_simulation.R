@@ -12,7 +12,7 @@ set.seed(seed)
 #We train models on the anchor year (donor) data only in the first year
 year=train_year
 #####Prepare receiver survey##### 
-plfs.rec=read_dta(file.path(input_path, sprintf(plfs_s2_file, year)))
+plfs.rec=read_dta(file.path(harmonized_path, sprintf(plfs_s2_file, year)))
 #create sequential IDs
 plfs.rec$hidseq=seq(1:nrow(plfs.rec))
 plfs.rec=subset(plfs.rec,!is.na(consumption_pc_adj))
@@ -300,7 +300,7 @@ foreach (year = years,
                        "compute_r_squared")) %dopar% {
 
 #####Prepare receiver survey##### 
-plfs.rec=read_dta(file.path(input_path, sprintf(plfs_s2_file, year)))
+plfs.rec=read_dta(file.path(harmonized_path, sprintf(plfs_s2_file, year)))
 #create sequential IDs
 plfs.rec$hidseq=seq(1:nrow(plfs.rec))
 plfs.rec=subset(plfs.rec,!is.na(consumption_pc_adj))

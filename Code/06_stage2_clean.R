@@ -43,7 +43,7 @@ prep_plfs_s2 <- function(df, ref_year) {
 #===============================================================================
 #plfs.don is here the harmonized PLFS 2022 with all common variables between the
 #different rounds of the PLFS to be used in stage 2
-plfs.don=read_dta(file.path(input_path, sprintf(plfs_s2_file, anchor_year)))
+plfs.don=read_dta(file.path(harmonized_path, sprintf(plfs_s2_file, anchor_year)))
 #We bring the dataset containing the imputed consumption
 plfs.imp=read_dta(paste(run_path,
           "/data/Imputed_PLFS_22_match.dta",sep=""))

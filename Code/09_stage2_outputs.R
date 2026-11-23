@@ -93,7 +93,7 @@ ggsave(paste(run_path,
 ########
 
 #load HCES
-hces=read_dta(file.path(input_path, hces_file))
+hces=read_dta(file.path(harmonized_path, hces_file))
 # state_vars <- paste0("state_", 1:37)
 # state_vars = state_vars[-26] # State 26 does not exist
 # #Regroup state dummies
@@ -127,7 +127,7 @@ tab2 = tab2 %>% rename(Sector=urb)
 tab2
 
 #load PLFS 22
-plfs=read_dta(file.path(input_path, sprintf(plfs_s2_file, anchor_year)))
+plfs=read_dta(file.path(harmonized_path, sprintf(plfs_s2_file, anchor_year)))
 plfs.imp=read_dta(paste(run_path,
               "/data/Imputed_PLFS_22_match.dta",sep=""))
 plfs.imp=subset(plfs.imp,select=c(hhid,mpce_sp_def_ind))
@@ -191,7 +191,7 @@ pov_results <- foreach (year = years, .combine = "rbind",
  .export   = c("q_vals","cpi21","icp21","lic","lmic","umic")) %dopar% {
                           
   #Load PLFS data
-  data.rec=read_dta(file.path(input_path, sprintf(plfs_s2_file, year)))
+  data.rec=read_dta(file.path(harmonized_path, sprintf(plfs_s2_file, year)))
   data.rec$pop_wgt = with(data.rec,weight*hh_size)
   data.rec = subset(data.rec,!is.na(consumption_pc_adj) & !is.na(pop_wgt))
   #poverty with intl lines
@@ -274,7 +274,7 @@ pov_results_sec <- foreach (year = years, .combine = "rbind",
   .export   = c("q_vals","cpi21","icp21","lic","lmic","umic")) %dopar% {
                           
   #Load PLFS data
-  data.rec=read_dta(file.path(input_path, sprintf(plfs_s2_file, year)))
+  data.rec=read_dta(file.path(harmonized_path, sprintf(plfs_s2_file, year)))
   data.rec$pop_wgt = with(data.rec,weight*hh_size)
   data.rec = subset(data.rec,!is.na(consumption_pc_adj) & !is.na(pop_wgt))
 
@@ -438,7 +438,7 @@ plfs = plfs.don %>%
          survey="PLFS",
          ventile=xtile(welfare,n=20,wt=weight)) 
 
-hces=read_dta(file.path(input_path, hces_file))
+hces=read_dta(file.path(harmonized_path, hces_file))
 hces$survey="HCES"
 hces = hces %>%
   rename(welfare=mpce_sp_def_ind, weight=pop_wgt) %>%

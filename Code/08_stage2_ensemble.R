@@ -10,7 +10,7 @@ pov_results <- foreach (year = years, .combine = "rbind",
 .packages = c("survey", "haven","dplyr","tidyr","dineq")) %dopar% {
   
   #Load PLFS data
-  plfs.rec=read_dta(file.path(input_path, sprintf(plfs_s2_file, year)))
+  plfs.rec=read_dta(file.path(harmonized_path, sprintf(plfs_s2_file, year)))
   #Load simulations results
   df=readRDS(file=paste(run_path,
             "/data/Simulations_model_",use_mod,"_",year,".rds",sep=""))
@@ -98,14 +98,14 @@ stopCluster(cl)
 
 # Bring official numbers for the anchor year
 
-plfs=read_dta(file.path(input_path, sprintf(plfs_s2_file, anchor_year)))
+plfs=read_dta(file.path(harmonized_path, sprintf(plfs_s2_file, anchor_year)))
 plfs$survey="PLFS"
 plfs = plfs %>%
   mutate( weight=weight*hh_size) %>%
   rename(welfare=consumption_pc_adj) %>%
   filter(!is.na(weight))
 
-hces=read_dta(file.path(input_path, hces_file))
+hces=read_dta(file.path(harmonized_path, hces_file))
 hces$survey="HCES"
 hces = hces %>%
   rename(welfare=mpce_sp_def_ind, 

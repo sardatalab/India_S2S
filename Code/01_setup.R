@@ -6,13 +6,16 @@
 ### checks the paths, creates the run folder and its logs, runs the data preparation
 ### (if run_prep) and loads the packages (if run_s2s).
 
-if (!exists("path") || !exists("exercise") || !exists("output_path")) {
+if (!exists("path") || !exists("exercise") || !exists("s2s_root")) {
   stop("Run RUN_S2S.R (in the repo folder), not the files in Code/")
 }
-if (!exercise %in% names(input_path)) {
-  stop("No input folder for exercise '", exercise, "': add it to your block in section 2 of RUN_S2S.R")
+#Folders of the S2S data root (section 2 of RUN_S2S.R)
+inputs_path     <- file.path(s2s_root, "inputs")                          # external inputs
+harmonized_path <- file.path(s2s_root, "harmonized", harmonized_folder)   # harmonized files of this exercise
+output_path     <- file.path(s2s_root, "output")                          # runs
+for (d in c(s2s_root, inputs_path, harmonized_path)) {
+  if (!dir.exists(d)) stop("Folder not found: ", d, " (check s2s_root in section 2 of RUN_S2S.R)")
 }
-input_path <- input_path[[exercise]]
 
 #===============================================================================
 # Run folder: <output_path>/<exercise>/<date_time>_<nsim1>x<nsim2>/
@@ -44,7 +47,8 @@ writeLines(c(
   paste("started:    ", format(Sys.time(), "%Y-%m-%d %H:%M:%S")),
   paste("user:       ", user),
   paste("code:       ", git_commit),
-  paste("input_path: ", input_path),
+  paste("harmonized: ", harmonized_path),
+  paste("inputs:     ", inputs_path),
   paste("run_prep:   ", run_prep, "  run_s2s:", run_s2s),
   paste("simulations:", nsim1, "(stage 1),", nsim2, "(stage 2)"),
   paste("seed:       ", seed),
@@ -70,7 +74,7 @@ if (run_prep) {
   stata <- find_stata()
   message("Running the data preparation in Stata: ", stata)
   old_wd <- setwd(file.path(run_path, "logs"))   # Stata writes 00_master.log here
-  system2(stata, c("/e", "do", shQuote(prep_master), shQuote(input_path), shQuote(run_path)))
+  system2(stata, c("/e", "do", shQuote(prep_master), shQuote(s2s_root), shQuote(run_path)))
   setwd(old_wd)
   stata_log <- file.path(run_path, "logs", "00_master.log")
   if (!file.exists(stata_log) || any(grepl("^r\\([0-9]+\\);", readLines(stata_log, warn = FALSE)))) {

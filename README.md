@@ -9,19 +9,21 @@ A Survey-to-Survey Imputation Approach*.
 ## How to run
 
 1. Clone this repo into `C:/Users/<you>/WBG_DEV/Github/` (GitHub Desktop).
-2. Open `RUN_S2S.R` and, the first time only, add your block of paths in section 2:
-   - `input_path`: the folder with the harmonized inputs of each exercise (read only)
-   - `output_path`: where your runs are saved
+2. Open `RUN_S2S.R` and, the first time only, add your block in section 2 with `s2s_root`:
+   the S2S data folder of India on the team drive (`P:/SARMD/SARDATABANK/S2S/IND`). It holds
+   - `inputs/`: external inputs (PRIMUS, CPI, weights, `States.xlsx`), read only
+   - `harmonized/<FY2022|FY2023|CY2023>/`: harmonized files of each exercise, read only
+   - `output/`: the runs
 3. In section 1, choose the exercise and what to run. The parameters of each exercise
    (years, input files, simulations, prices) are in section 3.
 4. Run it: in RStudio click **Source** (top right of the editor) or press **Ctrl+Shift+S**.
    Do not use **Run** or **Ctrl+Enter**, which send the lines one by one to the console.
    Wait for `Done. Results in: ...` in the console. No need to open `India_S2S.Rproj`.
 
-Each run creates its own folder, `<output_path>/<exercise>/<date_time>_<nsim1>x<nsim2>/`, with
+Each run creates its own folder, `<s2s_root>/output/<exercise>/<date_time>_<nsim1>x<nsim2>/`, with
 `data/`, `models/`, `tables/`, `figures/`, `logs/`, a copy of the master file used and
 `run_log.txt` (code version, inputs, settings, R and package versions). Nothing is written
-into the repo or the input folder.
+into the repo, `inputs/` or `harmonized/`.
 
 ## Exercises (section 3 of `RUN_S2S.R`)
 

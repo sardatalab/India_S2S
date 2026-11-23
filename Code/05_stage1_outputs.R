@@ -3,14 +3,14 @@
 ####Figure 3####
 
 #2022 HCES official and PLFS abbreviated consumption density plot
-plfs=read_dta(file.path(input_path, sprintf(plfs_s2_file, anchor_year)))
+plfs=read_dta(file.path(harmonized_path, sprintf(plfs_s2_file, anchor_year)))
 plfs$survey="PLFS"
 plfs = plfs %>%
   mutate(log_consumption_pc_adj = log(consumption_pc_adj),
          weight=weight*hh_size) %>%
   rename(welfare=log_consumption_pc_adj)
 
-hces=read_dta(file.path(input_path, hces_file))
+hces=read_dta(file.path(harmonized_path, hces_file))
 hces$survey="HCES"
 hces = hces %>%
   rename(welfare=mpce_sp_def_ind, weight=pop_wgt) %>%
@@ -34,7 +34,7 @@ rm(plfs,hces)
 ####Figure 4####
 years <- c(stage2_years, anchor_year)
 for (year in years) {
-  plfs.rec=read_dta(file.path(input_path, sprintf(plfs_s2_file, year)))
+  plfs.rec=read_dta(file.path(harmonized_path, sprintf(plfs_s2_file, year)))
   plfs.rec$log_labor_pc_adj=log(plfs.rec$total_labor_pc_adj+1)
   plfs.rec$log_consumption_pc_adj=log(plfs.rec$consumption_pc_adj+1)
   plfs.rec$pop_wgt=with(plfs.rec,weight*hh_size)

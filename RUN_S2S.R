@@ -30,21 +30,23 @@ run_s2s  <- TRUE                # TRUE = run Stage 1 and Stage 2 (R)
 #===============================================================================
 # 2. Paths: one block per user, found by your Windows username
 #===============================================================================
-# input_path : for each exercise, the folder with its harmonized inputs (read only)
-# output_path: where your runs are saved. Each run creates its own folder,
-#              <output_path>/<exercise>/<date_time>_<nsim1>x<nsim2>/
+# s2s_root   : the S2S data folder of India on the team drive. It holds
+#                inputs/      external inputs (PRIMUS, CPI, weights, States.xlsx), read only
+#                harmonized/  harmonized files, one folder per anchor (FY2022, FY2023, CY2023), read only
+#                output/      the runs: <exercise>/<date_time>_<nsim1>x<nsim2>/
+# review_path: optional. A copy of the tables and logs of each run goes here as well
+#              (a folder Claude can read, to check results)
 # stata_exe  : optional, only if run_prep = TRUE and Stata is not found automatically
 
 user <- tolower(Sys.info()[["user"]])
 
 #Diego
 if (user == "wb587758") {
-  input_path  <- c(fy2022_backcast = "C:/Users/wb587758/OneDrive - WBG/IND/S2S/2022-23")
-  output_path <- "C:/Users/wb587758/OneDrive - WBG/IND/S2S/runs"
+  s2s_root    <- "P:/SARMD/SARDATABANK/S2S/IND"
+  review_path <- "C:/Users/wb587758/OneDrive - WBG/IND/S2S/checks/runs"
 #Jaime
 } else if (user == "wb553773") {
-  input_path  <- c(fy2022_backcast = "C:/Users/wb553773/OneDrive - WBG/Stats Team/IND S2S imputation/Reproducibility package")
-  output_path <- "C:/Users/wb553773/OneDrive - WBG/Stats Team/IND S2S imputation/runs"
+  s2s_root    <- "P:/SARMD/SARDATABANK/S2S/IND"
 #Anyone else: add a block like the ones above
 } else {
   stop("No paths for user '", user, "': add your block in section 2 of RUN_S2S.R")
@@ -54,7 +56,7 @@ if (user == "wb587758") {
 # 3. Parameters of each exercise
 #===============================================================================
 # Years are the first calendar year of each July-June round (2022 = 2022-23).
-# Input files are relative to the exercise's input_path.
+# Input files are in <s2s_root>/harmonized/<harmonized_folder>/ (States.xlsx in <s2s_root>/inputs/).
 
 #---------------------------------------------------------------------------
 # Common to all exercises
@@ -80,10 +82,11 @@ if (exercise == "fy2022_backcast") {
   stage2_years <- 2017:2021        # stage 2: PLFS rounds that receive the imputed ratio
   train_year   <- stage2_years[1]  # stage 2 models are trained once, on this round, and reused
 
-  hces_file    <- "Data/Stage 1/Cleaned/HCES22_s2s.dta"                                   # HCES donor, stage 1
-  plfs_s1_file <- "Data/Stage 1/Cleaned/IND_2022_PLFS_v01_M_v02_A_s2s_HCES_to_PLFS.dta"  # PLFS receiver, stage 1
-  plfs_s2_file <- "Data/Stage 2/Cleaned/IND_%d_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta"    # PLFS rounds, stage 2 (%d = year)
-  states_file  <- "Data/Stage 1/Cleaned/states.xlsx"                                     # state names
+  harmonized_folder <- "FY2022"    # harmonized files of this exercise, in <s2s_root>/harmonized/
+  hces_file    <- "HCES22_s2s.dta"                                   # HCES donor, stage 1
+  plfs_s1_file <- "IND_2022_PLFS_v01_M_v02_A_s2s_HCES_to_PLFS.dta"   # PLFS receiver, stage 1
+  plfs_s2_file <- "IND_%d_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta"     # PLFS rounds, stage 2 (%d = year)
+  states_file  <- "States.xlsx"                                      # state names (in <s2s_root>/inputs/)
 
   nsim1 = 1000                     # simulations, stage 1
   nsim2 = 100                      # simulations, stage 2
@@ -142,4 +145,12 @@ cat(paste("finished:   ", format(Sys.time(), "%Y-%m-%d %H:%M:%S")), "",
     capture.output(sessionInfo()), file = run_log, sep = "\n", append = TRUE)
 sink()
 close(console_log)
+
+#Copy of the tables and logs for review (optional, review_path in section 2)
+if (exists("review_path")) {
+  review_run <- file.path(review_path, exercise, run_name)
+  dir.create(review_run, recursive = TRUE, showWarnings = FALSE)
+  file.copy(file.path(run_path, c("tables", "logs", "run_log.txt", "RUN_S2S_used.R")),
+            review_run, recursive = TRUE)
+}
 message("Done. Results in: ", run_path)
