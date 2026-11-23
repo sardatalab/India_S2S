@@ -47,6 +47,7 @@
 
 # R
 !/**/*.R
+!/prep/doc/*.xlsx
 !/**/*.Rmd
 !/**/*.Rproj
 !/**/*.Rproj
