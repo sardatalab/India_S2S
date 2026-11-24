@@ -67,6 +67,12 @@ missing_report.don <- data.don %>%
     pivot_longer(cols = everything(), 
                  names_to = "Variable", values_to = "PercentMissing")
 subset(missing_report.don,PercentMissing>0)
+#drop donors with missing covariates (as for the receiver above): without a prediction they
+#cannot be matched. None in HCES 2022-23; 1 household in HCES 2023-24 (hh_sh_lit missing)
+n_before <- nrow(data.don)
+data.don <- na.omit(data.don)
+if (nrow(data.don) < n_before) message("Stage 1 donor: dropped ", n_before - nrow(data.don),
+                                       " HCES households with missing covariates")
 
 
 ### Load Excel file with states names

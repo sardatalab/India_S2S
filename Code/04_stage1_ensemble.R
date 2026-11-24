@@ -92,7 +92,20 @@ closest_index_pred <- list()
 # Find the closest simulated distribution for each state-sector
 for (key in names(original_data)) {
   cat("State_Sector", key, "\n", sep=" ")
-  
+
+  # Cells without PLFS households: nothing to impute (e.g. rural Chandigarh in PLFS 2023-24)
+  if (nrow(sim_data_match[[key]]) == 0) {
+    message("State_Sector ", key, ": no PLFS households, skipped")
+    next
+  }
+  # Cells without HCES households: compare with the HCES distribution of the whole state
+  if (length(original_data[[key]]) == 0) {
+    st <- as.numeric(sub("_.*", "", key))
+    original_data[[key]] <- as.numeric(subset(data.don, state == st)$mpce_sp_def_ind)
+    message("State_Sector ", key, ": no HCES households, compared with the whole state (",
+            length(original_data[[key]]), " households)")
+  }
+
   wasserstein_distances_match <- compute_wasserstein_distance(original_data[[key]], 
                                                               sim_data_match[[key]])
   wasserstein_distances_pred <- compute_wasserstein_distance(original_data[[key]], 
