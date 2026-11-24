@@ -931,7 +931,7 @@ gen shr_durables = exp_durables/exp_total
 
 * Temporal deflation
 preserve 
-use "${rootdatalib}\\Aux_Data\\IND_allyears_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS_cpi.dta", clear  
+use "${s2s_inputs}\IND_allyears_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS_cpi.dta", clear  
 keep if h_head==1
 keep year hhid cpi_monthly
 tempfile cpi 
@@ -942,17 +942,17 @@ merge m:1 year hhid using `cpi', keepusing(cpi_monthly)  keep(match master)
 tab _merge
 drop _merge
 
-notes: Average CPI during HCES 2022-23 months was 177.7042
+notes: Average CPI during the anchor months: ${anchor_cpi} (set in prep/00_master.do)
 
-replace regular_wages = regular_wages*177.7042/cpi_monthly
-replace casual_wages = casual_wages*177.7042/cpi_monthly
-replace self_income = self_income*177.7042/cpi_monthly
-replace total_labor = total_labor*177.7042/cpi_monthly
-replace consumption_pc = consumption_pc*177.7042/cpi_monthly
+replace regular_wages = regular_wages*${anchor_cpi}/cpi_monthly
+replace casual_wages = casual_wages*${anchor_cpi}/cpi_monthly
+replace self_income = self_income*${anchor_cpi}/cpi_monthly
+replace total_labor = total_labor*${anchor_cpi}/cpi_monthly
+replace consumption_pc = consumption_pc*${anchor_cpi}/cpi_monthly
 
 *India team corrected weights for Assam
 preserve
-use "${input}\PLFS 22 23 new weights.dta", clear
+use "${s2s_inputs}\PLFS 22 23 new weights.dta", clear
 capture drop hhid pid
 rename secondstagestratumno stage2_stratumno
 rename sbno sample_sg
@@ -983,7 +983,7 @@ gen   total_labor_pc = total_labor/hh_size
 
 * Spatial deflation
 preserve 
-use "${rootdatalib}\\Aux_Data\\Sp_deflators_HCES_22.dta", clear
+use "${harmonized}/${spdef_file}", clear
 rename urb urban
 tempfile spdef
 save `spdef', replace

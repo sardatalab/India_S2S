@@ -922,7 +922,7 @@ gen consumption_pc = hh_usual_cons_rs/hh_size
 
 * Temporal deflation
 preserve 
-use "${rootdatalib}\\Aux_Data\\IND_allyears_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS_cpi.dta", clear  
+use "${s2s_inputs}\IND_allyears_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS_cpi.dta", clear  
 keep if h_head==1
 keep year hhid cpi_monthly
 tempfile cpi 
@@ -934,13 +934,13 @@ tab _merge
 drop _merge
 
 
-notes: Average CPI during HCES 2022-23 months was 177.7042
+notes: Average CPI during the anchor months: ${anchor_cpi} (set in prep/00_master.do)
 
-replace regular_wages = regular_wages*177.7042/cpi_monthly
-replace casual_wages = casual_wages*177.7042/cpi_monthly
-replace self_income = self_income*177.7042/cpi_monthly
-replace total_labor = total_labor*177.7042/cpi_monthly
-replace consumption_pc = consumption_pc*177.7042/cpi_monthly
+replace regular_wages = regular_wages*${anchor_cpi}/cpi_monthly
+replace casual_wages = casual_wages*${anchor_cpi}/cpi_monthly
+replace self_income = self_income*${anchor_cpi}/cpi_monthly
+replace total_labor = total_labor*${anchor_cpi}/cpi_monthly
+replace consumption_pc = consumption_pc*${anchor_cpi}/cpi_monthly
 
 keep hhid pid strata psu weight year hh_size hh_size_sq urban state state_1-state_36 hh_type hhtype_1-hhtype_8 hh_head_age hh_age_avg hh_size_age0-hh_size_age65plus hh_sh_age0-hh_sh_age65plus hh_sh_age0_4 hh_dep_ratio flag1_depen hh_head_male hh_sh_female hh_sh_male flag2_sex hh_sex_ratio hh_head_nm hh_head_m hh_head_w hh_head_d hh_head_hin hh_head_nhin hh_head_msl hh_head_bud hh_head_chr hh_head_sik hh_head_oth hh_head_tribe hh_head_caste hh_head_back hh_head_other hh_head_lit hh_head_ilit hh_sh_lit hh_sh_ilit hh_sh1564_lit hh_head_educ hh_mx_educ hh_avg_educ hh_sp_educ hh_head_educ0 hh_head_educ_pri hh_head_educ_prc hh_head_educ_sei hh_head_educ_sec hh_head_educ_ter hh_sp_educ0 hh_sp_educ_pri hh_sp_educ_prc hh_sp_educ_sei hh_sp_educ_sec hh_sp_educ_ter flag3_spouse hh_head_ls_wrk hh_head_ls_u hh_head_ls_nlf hh_head_wrk_salreg hh_head_wrk_salcas hh_head_wrk_self hh_head_wrk_unp hh_head_sect_1-hh_head_sect_10 hh_head_occ_1-hh_head_occ_10 hh_head_job_contract hh_head_paidleave hh_head_pension hh_head_gratuity hh_head_health flag4_head_lab hh_sh_ls_wrk hh_sh_wrk_salreg hh_sh_wrk_salcas hh_sh_wrk_selfem hh_sh_wrk_unpaid hh_sh_sect_1-hh_sh_sect_10 hh_sh_occ_1-hh_sh_occ_10 hh_sh_job_contract hh_sh_paidleave hh_sh_pension hh_sh_gratuity hh_sh_health flag5_all_lab regular_wages casual_wages self_income total_labor shr_regwages shr_caswages shr_selfinc flag6_income consumption_pc relationtohead
 
@@ -954,7 +954,7 @@ gen   total_labor_pc = total_labor/hh_size
 
 * Spatial deflation
 preserve 
-use "${rootdatalib}\\Aux_Data\\Sp_deflators_HCES_22.dta", clear
+use "${harmonized}/${spdef_file}", clear
 rename urb urban
 tempfile spdef
 save `spdef', replace

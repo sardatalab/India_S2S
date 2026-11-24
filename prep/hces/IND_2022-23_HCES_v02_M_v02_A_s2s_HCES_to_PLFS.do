@@ -519,10 +519,10 @@ ren hh_sizesq hh_size_sq
 
 save "${output}\HCES22_s2s.dta", replace
 
-use "${input}\IND_PRIMUS_2022-23.dta", clear
+use "${s2s_inputs}\IND_PRIMUS_2022-23.dta", clear
 gen spdef = welfarenom_final / welfaredef_final	
 collapse (mean) spdef [aw=pwt], by(state sector)
 replace sector = sector -1
 rename sector urb
-save "${path}\Stage 2\Raw\Aux_Data\Sp_deflators_HCES_22.dta", replace
+save "${output}\Sp_deflators_HCES_22.dta", replace
 	

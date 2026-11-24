@@ -303,7 +303,7 @@ merge m:1 hhid using `control'
 drop if _merge!=3
 drop _merge
 
-merge m:1 hhid using "${output}\IND_PRIMUS_2022-23.dta", keepusing(welfaredef_final)
+merge m:1 hhid using "${s2s_inputs}\IND_PRIMUS_2022-23.dta", keepusing(welfaredef_final)
 
 save "${output}\IND_2022-23_HCES_v02_M.dta", replace
 

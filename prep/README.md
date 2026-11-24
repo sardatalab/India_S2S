@@ -4,8 +4,21 @@ Builds the harmonized S2S files that `RUN_S2S.R` reads, from the survey data in
 `P:\SARMD\SARDATABANK\WORKINGDATA` and the external inputs in `P:\SARMD\SARDATABANK\S2S\IND\inputs`.
 Outputs go to `P:\SARMD\SARDATABANK\S2S\IND\harmonized\<FY2022|FY2023|CY2023>\`.
 
-> Status: the do-files are copied **as they were** (with their original paths) as a first step.
-> The master (`00_master.do`) with one block of paths per user comes next.
+> Status: `00_master.do` runs **fy2022_backcast** (to be validated with `99_compare.do`).
+> fy2023 and cy2023_forward: their do-files are here as they were found (old paths); the master does not run them yet.
+
+## How to run
+
+```
+1. 00_master.do  section 1: your paths   section 2: exercise + test = 1
+2. Do 00_master.do   ─► harmonized\FY2022_test\     (intermediate files and log in _work\)
+3. Do 99_compare.do  ─► compares FY2022_test with FY2022 (the files of the note) ─► _work\compare_FY2022.csv
+4. All IDENTICAL? set test = 0 and run again ─► harmonized\FY2022\ (what RUN_S2S.R reads)
+```
+
+Parameters set in the master and used by the do-files: `${anchor_cpi}` (temporal deflation of PLFS),
+`${spdef_file}` (spatial deflators built by the HCES step), `${s2s_inputs}` (PRIMUS, household CPI, weights),
+`${harmonized}` (output folder), `${input}`/`${output}` (per step).
 
 ## Workflow
 
@@ -41,8 +54,11 @@ CY2023 (calendar-year HCES 2023 anchor, forward to PLFS CY2024-2025; Leo Tornaro
 
 ## Known issues (to fix in the next steps)
 
-- Paths are hard-coded to the old OneDrive folders.
-- The anchor CPI (177.7042) is typed in every PLFS file; FY2023 should use 186.7333 and CY2023 181.7875.
+- FY2022 files and the PLFS_to_PLFS files: paths and anchor CPI now come from the master. FY2023 and CY2023 files still have the old paths.
+- FY2023 should use the anchor CPI 186.7333 and CY2023 181.7875 (PLFS 2023 FY file still has 177.7042 typed in).
+- EUS 2011 (robustness only) is not in the master.
+- PLFS 2020 and 2021: the official collection (datalibweb SARRAW, P:) has hhvisit1/personvisit1 .dta, not the MoSPI text files.
+  `plfs/IND_<y>_PLFS-V1_v01_M_dta.do` reads them (checked: same records and values as the text files, Nov 2026).
 - HCES 2023-24 names its state dummies `State_` (the R code expects `state_`).
 - CY2023: prices to CY2023 average prices, CY2023 spatial deflators, the household CPI by year,
   the weight factors and the paths (`code` not defined) still to be done.

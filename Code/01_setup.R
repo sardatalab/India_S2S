@@ -74,7 +74,9 @@ if (run_prep) {
   stata <- find_stata()
   message("Running the data preparation in Stata: ", stata)
   old_wd <- setwd(file.path(run_path, "logs"))   # Stata writes 00_master.log here
-  system2(stata, c("/e", "do", shQuote(prep_master), shQuote(s2s_root), shQuote(run_path)))
+  # arguments of 00_master.do: exercise, s2s_root, repo path (its own "test" switch decides
+  # whether it writes to harmonized/<FOLDER>_test or harmonized/<FOLDER>)
+  system2(stata, c("/e", "do", shQuote(prep_master), shQuote(exercise), shQuote(s2s_root), shQuote(path)))
   setwd(old_wd)
   stata_log <- file.path(run_path, "logs", "00_master.log")
   if (!file.exists(stata_log) || any(grepl("^r\\([0-9]+\\);", readLines(stata_log, warn = FALSE)))) {
