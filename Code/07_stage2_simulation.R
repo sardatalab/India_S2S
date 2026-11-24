@@ -291,13 +291,16 @@ years=setdiff(stage2_years, train_year)
 cl <- makeCluster(length(years))
 registerDoParallel(cl)
 
+# Reproducible parallel random numbers: %dorng% gives each year its own random stream,
+# derived from the seed, so a rerun gives the same simulations (the note's %dopar% did not)
+set.seed(seed)
 foreach (year = years,
          .packages = c("StatMatch", "survey", "questionr", "reldist", 
                        "glmnet", "useful", "data.table", "haven", 
                        "statar", "dplyr", "tidyr", "dineq", "convey",
                        "parallel","foreach"),
          .export   = c("plfs.don","run_path","sim",
-                       "compute_r_squared")) %dopar% {
+                       "compute_r_squared")) %dorng% {
 
 #####Prepare receiver survey##### 
 plfs.rec=read_dta(file.path(harmonized_path, sprintf(plfs_s2_file, year)))

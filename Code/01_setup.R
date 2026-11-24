@@ -93,7 +93,7 @@ if (run_s2s) {
   # Packages: missing ones are installed from CRAN, without questions
   packages <- c(
     "StatMatch", "survey", "questionr", "reldist", "glmnet", "useful",
-    "data.table", "haven", "statar", "parallel", "foreach", "doParallel",
+    "data.table", "haven", "statar", "parallel", "foreach", "doParallel", "doRNG",
     "dplyr", "tidyr", "dineq", "convey", "transport", "ggridges",
     "ggplot2","forcats","scales","readxl","Hmisc","viridis","ggh4x","patchwork",
     "GGally"

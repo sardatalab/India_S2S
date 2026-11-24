@@ -22,7 +22,7 @@ rm(list = ls())
 # 1. What to run
 #===============================================================================
 
-exercise <- "fy2023"   # fy2022_backcast: HCES 2022-23 anchor, backward to PLFS 2017-2021 (July 2025 note)
+exercise <- "fy2022_backcast"   # fy2022_backcast: HCES 2022-23 anchor, backward to PLFS 2017-2021 (July 2025 note)
                                 # fy2023:          HCES 2023-24 anchor, PLFS 2023-24, Stage 1 only
                                 # (to come: cy2023_forward)
 run_prep <- FALSE               # TRUE = rebuild the harmonized input files (Stata, prep/)
@@ -89,8 +89,8 @@ if (exercise == "fy2022_backcast") {
   plfs_s2_file <- "IND_%d_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta"     # PLFS rounds, stage 2 (%d = year)
   states_file  <- "States.xlsx"                                      # state names (in <s2s_root>/inputs/)
 
-  nsim1 = 10                    # simulations, stage 1
-  nsim2 = 10                      # simulations, stage 2
+  nsim1 = 1000                    # simulations, stage 1
+  nsim2 = 100                      # simulations, stage 2
 
   cpi21 = 1.101906                 # 2022 prices to 2021 PPP
   icp21 = 19.46895
