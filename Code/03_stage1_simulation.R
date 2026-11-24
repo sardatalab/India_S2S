@@ -195,11 +195,11 @@ stopCluster(cl)
 #save simulations results
 #R-squared
 write.csv(r2,file=paste(run_path,
-   "/tables/Simulations22_R2_",sim,".csv",sep=""),
+   "/tables/Simulations", yy, "_R2_",sim,".csv",sep=""),
             row.names = FALSE)
 #Model used
 write.csv(md,file=paste(run_path,
-    "/tables/Simulations22_model_used_",sim,".csv",sep=""),
+    "/tables/Simulations", yy, "_model_used_",sim,".csv",sep=""),
             row.names = FALSE)
   
   
@@ -211,10 +211,10 @@ write.csv(md,file=paste(run_path,
   simcons_match$mpce_sp_def_ind_geom=apply(simcons_match[,-1],
                                      1,geometric_mean,na.rm=TRUE)
 write.csv(simcons_match,file=paste(run_path,
-        "/data/Simulations22_match_",sim,".csv",sep=""),
+        "/data/Simulations", yy, "_match_",sim,".csv",sep=""),
         row.names = FALSE)
 saveRDS(simcons_match,file=paste(run_path,
-        "/data/Simulations22_match_",sim,".rds",sep=""))
+        "/data/Simulations", yy, "_match_",sim,".rds",sep=""))
 
 #Ensembles pred
 simcons_pred$mpce_sp_def_ind_mean=apply(simcons_pred[,-1],
@@ -225,16 +225,16 @@ simcons_pred$mpce_sp_def_ind_geom=apply(simcons_pred[,-1],
                                    1,geometric_mean,na.rm=TRUE)
 
 write.csv(simcons_pred,file=paste(run_path,
-       "/data/Simulations22_pred_",sim,".csv",sep=""),
+       "/data/Simulations", yy, "_pred_",sim,".csv",sep=""),
           row.names = FALSE)
 saveRDS(simcons_pred,file=paste(run_path,
-      "/data/Simulations22_pred_",sim,".rds",sep=""))
+      "/data/Simulations", yy, "_pred_",sim,".rds",sep=""))
 
 #Ensemble coefficients
 coefs$coef=apply(coefs, 1,mean,na.rm=TRUE)
 
 write.csv(coefs,file=paste(run_path,
-      "/tables/Simulations22_coefficients_",sim,".csv",
+      "/tables/Simulations", yy, "_coefficients_",sim,".csv",
        sep=""),
           row.names = TRUE)
 

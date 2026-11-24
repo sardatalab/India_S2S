@@ -20,16 +20,23 @@ set more off
 
 *--- 1. Paths and folder to compare
 local user = lower(c(username))
-if "`user'" == "wb587758" glo s2s_root "P:\SARMD\SARDATABANK\S2S\IND"
+local checks ""                    // optional: a folder where a copy of the result is saved
+if "`user'" == "wb587758" {
+	glo s2s_root "P:\SARMD\SARDATABANK\S2S\IND"
+	local checks "C:\Users\wb587758\OneDrive - WBG\IND\S2S\checks"
+}
 else if "`user'" == "wb553773" glo s2s_root "P:\SARMD\SARDATABANK\S2S\IND"
 else {
 	di as error "User `user' has no block in prep/99_compare.do: add yours."
 	exit 198
 }
-local folder "FY2022"
+local folder    "FY2022"           // FY2022 | FY2023 | CY2023: the test run is harmonized\<folder>_test
+local reference ""                 // empty = compare with harmonized\<folder>; or another folder in harmonized\
+                                   // (FY2023: "FY2023_reference", the Sep 2026 files)
 
 local new "${s2s_root}\harmonized\\`folder'_test"
 local old "${s2s_root}\harmonized\\`folder'"
+if "`reference'" != "" local old "${s2s_root}\harmonized\\`reference'"
 local out "`new'\_work\compare_`folder'.csv"
 
 *--- 2. One file
@@ -39,10 +46,11 @@ program define compare_one
 
 	* key
 	local key "hhid"
-	if strpos("`file'", "Sp_deflators") local key "state urb"
+	if strpos(lower("`file'"), "sp_deflators") local key "state urb"   // dir lists file names in lower case
 
 	* old file: rename everything except the key to __o1, __o2, ...
 	use "`olddir'\\`file'", clear
+	cap rename State_* state_*     // older HCES 2023-24 files have State_ dummies
 	local N_old = _N
 	qui ds `key', not
 	local vars `r(varlist)'
@@ -74,7 +82,7 @@ program define compare_one
 	local only_new = r(N)
 	qui count if _merge == 2
 	local only_old = r(N)
-	post `postname' ("`file'") ("_N") (`N_new') (`N_old') (`only_new' + `only_old') (.)
+	post `postname' ("`file'") ("_N") (`N_new') (`N_old') (`only_new' + `only_old') (.) (.)
 	keep if _merge == 3
 
 	local i 0
@@ -83,7 +91,7 @@ program define compare_one
 		local ++i
 		cap confirm variable `v', exact
 		if _rc {
-			post `postname' ("`file'") ("`v'") (.) (.) (.) (.)    // only in old
+			post `postname' ("`file'") ("`v'") (.) (.) (.) (.) (.)    // only in old
 			local ++ndiffvars
 			continue
 		}
@@ -97,19 +105,24 @@ program define compare_one
 			local nd = r(N)
 			qui sum __d
 			local mx = cond(r(N) > 0, r(max), 0)
-			drop __d
+			qui gen double __r = `v' / __o`i' if __o`i' != 0 & !missing(`v', __o`i')
+			qui sum __r
+			local mr = r(mean)          // mean new/old: shows a common factor (e.g. a different anchor CPI)
+			drop __d __r
 		}
 		else if !`num_new' & !`num_old' {
 			qui count if `v' != __o`i'
 			local nd = r(N)
 			local mx = .
+			local mr = .
 		}
 		else {
 			local nd = _N        // numeric in one file, string in the other
 			local mx = .
+			local mr = .
 		}
 		if `nd' > 0 local ++ndiffvars
-		post `postname' ("`file'") ("`v'") (.) (.) (`nd') (`mx')
+		post `postname' ("`file'") ("`v'") (.) (.) (`nd') (`mx') (`mr')
 	}
 	* variables only in the new file
 	foreach v of local vars_new {
@@ -122,7 +135,7 @@ program define compare_one
 			if "`v'" == "`k'" local found 1
 		}
 		if !`found' {
-			post `postname' ("`file'") ("`v' (only in new)") (.) (.) (.) (.)
+			post `postname' ("`file'") ("`v' (only in new)") (.) (.) (.) (.) (.)
 			local ++ndiffvars
 		}
 	}
@@ -138,7 +151,7 @@ end
 *--- 3. All files
 tempname P
 tempfile res
-postfile `P' str60 file str60 variable N_new N_old n_diff max_abs_diff using `res'
+postfile `P' str60 file str60 variable N_new N_old n_diff max_abs_diff mean_ratio using `res'
 
 local files : dir "`new'" files "*.dta"
 foreach f of local files {
@@ -160,4 +173,8 @@ postclose `P'
 use `res', clear
 export delimited using "`out'", replace
 di as result _n "Details: `out'"
-list file variable n_diff max_abs_diff if n_diff > 0, sep(0) noobs abbreviate(30)
+if "`checks'" != "" {
+	export delimited using "`checks'\compare_`folder'.csv", replace
+	di as result "Copy:    `checks'\compare_`folder'.csv"
+}
+list file variable n_diff max_abs_diff mean_ratio if n_diff > 0, sep(0) noobs abbreviate(30)

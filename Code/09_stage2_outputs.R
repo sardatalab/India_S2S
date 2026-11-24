@@ -129,7 +129,7 @@ tab2
 #load PLFS 22
 plfs=read_dta(file.path(harmonized_path, sprintf(plfs_s2_file, anchor_year)))
 plfs.imp=read_dta(paste(run_path,
-              "/data/Imputed_PLFS_22_match.dta",sep=""))
+              "/data/Imputed_PLFS_", yy, "_match.dta",sep=""))
 plfs.imp=subset(plfs.imp,select=c(hhid,mpce_sp_def_ind))
 plfs=merge(plfs,plfs.imp,by="hhid",all.x=TRUE)
 rm(plfs.imp)

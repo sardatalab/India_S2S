@@ -23,7 +23,8 @@ rm(list = ls())
 #===============================================================================
 
 exercise <- "fy2022_backcast"   # fy2022_backcast: HCES 2022-23 anchor, backward to PLFS 2017-2021 (July 2025 note)
-                                # (to come: fy2023, cy2023_forward)
+                                # fy2023:          HCES 2023-24 anchor, PLFS 2023-24, Stage 1 only
+                                # (to come: cy2023_forward)
 run_prep <- FALSE               # TRUE = rebuild the harmonized input files (Stata, prep/)
 run_s2s  <- TRUE                # TRUE = run Stage 1 and Stage 2 (R)
 
@@ -96,7 +97,28 @@ if (exercise == "fy2022_backcast") {
 }
 
 #---------------------------------------------------------------------------
-# fy2023 and cy2023_forward: to come
+# fy2023: HCES 2023-24 anchor -> PLFS 2023-24, Stage 1 only (models retrained)
+#---------------------------------------------------------------------------
+if (exercise == "fy2023") {
+  anchor_year  <- 2023
+  stage2_years <- integer(0)       # no Stage 2
+  train_year   <- NA
+
+  harmonized_folder <- "FY2023"
+  hces_file    <- "HCES23_s2s.dta"
+  plfs_s1_file <- "IND_2023_PLFS_v01_M_v02_A_s2s_HCES_to_PLFS.dta"
+  plfs_s2_file <- "IND_%d_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta"     # 2023 only, for the Stage 1 figures
+  states_file  <- "States.xlsx"
+
+  nsim1 = 1000
+  nsim2 = 0
+
+  cpi21 = 1.158153                 # 2023-24 prices to 2021 PPP
+  icp21 = 19.46895
+}
+
+#---------------------------------------------------------------------------
+# cy2023_forward: to come
 #---------------------------------------------------------------------------
 
 if (!exists("anchor_year")) stop("No parameters for exercise '", exercise, "' in section 3")
@@ -133,11 +155,13 @@ if (run_s2s) {
   code("03_stage1_simulation.R")
   code("04_stage1_ensemble.R")
   code("05_stage1_outputs.R")
-  #Stage 2: PLFS anchor year -> other PLFS rounds
-  code("06_stage2_clean.R")
-  code("07_stage2_simulation.R")
-  code("08_stage2_ensemble.R")
-  code("09_stage2_outputs.R")
+  #Stage 2: PLFS anchor year -> other PLFS rounds (not in fy2023)
+  if (length(stage2_years) > 0) {
+    code("06_stage2_clean.R")
+    code("07_stage2_simulation.R")
+    code("08_stage2_ensemble.R")
+    code("09_stage2_outputs.R")
+  }
 }
 
 #Close the logs

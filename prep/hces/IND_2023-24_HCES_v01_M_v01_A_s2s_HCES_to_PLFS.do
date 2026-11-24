@@ -520,12 +520,13 @@ hh_dep_ratio
 
 ren hh_sizesq hh_size_sq
 
+rename State_* state_*      // the R code expects state_1 ... state_37 (as in HCES 2022-23)
 save "${output}\HCES23_s2s.dta", replace
 
-use "${input}\IND_PRIMUS_2023-24_v2.dta", clear
+use "${s2s_inputs}\IND_PRIMUS_2023-24_v2.dta", clear
 gen spdef = welfarenom_final / welfaredef_final	
 collapse (mean) spdef [aw=pwt], by(state sector)
 replace sector = sector -1
 rename sector urb
-save "${path}\Stage 2\Raw\Aux_Data\Sp_deflators_HCES_23.dta", replace
+save "${output}\Sp_deflators_HCES_23.dta", replace
 	

@@ -13,8 +13,9 @@
 *   the exercise, s2s_root and the repo path as arguments.
 *
 * Status
-*   fy2022_backcast : ready to test (compare with the files used for the note: 99_compare.do)
-*   fy2023, cy2023_forward : not yet
+*   fy2022_backcast : validated (Nov 2026): reproduces the note's harmonized files exactly
+*   fy2023          : ready to test (HCES 2023-24 → PLFS 2023-24, Stage 1)
+*   cy2023_forward  : not yet
 *===============================================================================
 
 args arg_exercise arg_root arg_repo      // only used when called from RUN_S2S.R
@@ -65,10 +66,32 @@ if "`exercise'" == "fy2022_backcast" {
 	glo anchor_cpi  177.7042                    // average CPI over the HCES 2022-23 months (Aug 2022 - Jul 2023)
 	glo spdef_file  "Sp_deflators_HCES_22.dta"   // built by the HCES step, used by every PLFS step
 	local hces_raw  "${rootdatalib}\IND\IND_2022_HCES\IND_2022_HCES_v04_M\Data\Stata"
-	local plfs_years 2017 2018 2019 2020 2021 2022
+	local hces_m    "IND_2022-23_HCES_v02_M.do"
+	local hces_s2s  "IND_2022-23_HCES_v02_M_v02_A_s2s_HCES_to_PLFS.do"
+	local hces_lvl1 "level01_2022.dta"
+	local primus    "IND_PRIMUS_2022-23.dta"
+	local plfs_years 2017 2018 2019 2020 2021 2022   // Stage 2 files (PLFS_to_PLFS)
 	local plfs_dta_years 2020 2021               // official collection has .dta (SARRAW), not the MoSPI text files
+	local s1_year   2022                         // Stage 1 receiver (HCES_to_PLFS)
+	local s1_do     "IND_2022_PLFS_v01_M_v02_A_s2s_HCES_to_PLFS.do"
+	local extra_inputs `""PLFS 22 23 new weights.dta""'   // corrected Assam weights (2022-23 only)
 }
-else if inlist("`exercise'", "fy2023", "cy2023_forward") {
+else if "`exercise'" == "fy2023" {
+	glo harm_folder "FY2023"
+	glo anchor_cpi  186.7333                    // average CPI over the HCES 2023-24 months (Aug 2023 - Jul 2024)
+	glo spdef_file  "Sp_deflators_HCES_23.dta"
+	local hces_raw  "${rootdatalib}\IND\IND_2023_HCES\IND_2023_HCES_v01_M\Data\Original"   // <- MoSPI levels: to confirm
+	local hces_m    "IND_2023-24_HCES_v01_M.do"
+	local hces_s2s  "IND_2023-24_HCES_v01_M_v01_A_s2s_HCES_to_PLFS.do"
+	local hces_lvl1 "level01_2023.dta"
+	local primus    "IND_PRIMUS_2023-24_v2.dta"
+	local plfs_years 2023                        // only for the Stage 1 figures (05_stage1_outputs.R); no Stage 2
+	local plfs_dta_years
+	local s1_year   2023
+	local s1_do     "IND_2023_PLFS_v01_M_v02_A_s2s_HCES_to_PLFS.do"
+	local extra_inputs
+}
+else if "`exercise'" == "cy2023_forward" {
 	di as error "Exercise `exercise' is not in the master yet (next steps)."
 	exit 198
 }
@@ -112,10 +135,12 @@ need_dir  "${prep}"
 need_dir  "${s2s_inputs}"
 need_dir  "${work}"
 need_dir  "`hces_raw'"
-need_file "`hces_raw'\level01_2022.dta"
-need_file "${s2s_inputs}\IND_PRIMUS_2022-23.dta"
+need_file "`hces_raw'\\`hces_lvl1'"
+need_file "${s2s_inputs}\\`primus'"
 need_file "${s2s_inputs}\IND_allyears_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS_cpi.dta"
-need_file "${s2s_inputs}\PLFS 22 23 new weights.dta"
+foreach f of local extra_inputs {
+	need_file "${s2s_inputs}\\`f'"
+}
 foreach y of local plfs_years {
 	need_dir "${rootdatalib}\IND\IND_`y'_PLFS\IND_`y'_PLFS_v01_M\Data\Original"
 }
@@ -138,45 +163,43 @@ di as result "Harmonized: ${harmonized}"
 di as result "Anchor CPI: ${anchor_cpi}"
 
 *===============================================================================
-* 5. fy2022_backcast
+* 5. Run (the same steps for every exercise; files and parameters from section 3)
 *===============================================================================
-if "`exercise'" == "fy2022_backcast" {
 
-	*--- 5.1 HCES 2022-23: survey levels ─► M file ─► HCES22_s2s.dta + Sp_deflators_HCES_22.dta
-	if `run_hces' {
-		glo input  "`hces_raw'"
-		glo output "${work}"
-		do "${prep}\hces\IND_2022-23_HCES_v02_M.do"
+*--- 5.1 HCES: survey levels ─► M file ─► HCES<yy>_s2s.dta + spatial deflators
+if `run_hces' {
+	glo input  "`hces_raw'"
+	glo output "${work}"
+	do "${prep}\hces\\`hces_m'"
 
-		glo input  "${work}"
-		glo output "${harmonized}"
-		do "${prep}\hces\IND_2022-23_HCES_v02_M_v02_A_s2s_HCES_to_PLFS.do"
-	}
-	else {
-		di as text "HCES step skipped (run_hces = 0): using ${harmonized}\\${spdef_file}"
-		need_file "${harmonized}/${spdef_file}"
-	}
-
-	*--- 5.2 PLFS 2017-2022: text files (2020, 2021: official .dta) ─► M file ─► IND_<y>_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta (Stage 2)
-	foreach y of local plfs_years {
-		if `y' < `plfs_from' continue
-		glo input  "${rootdatalib}\IND\IND_`y'_PLFS\IND_`y'_PLFS_v01_M\Data\Original"
-		glo output "${work}"
-		local src : list y in plfs_dta_years
-		if `src' do "${prep}\plfs\IND_`y'_PLFS-V1_v01_M_dta.do"     // official .dta
-		else     do "${prep}\plfs\IND_`y'_PLFS-V1_v01_M.do"         // MoSPI text files
-
-		glo input  "${work}"
-		glo output "${harmonized}"
-		do "${prep}\plfs\IND_`y'_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.do"
-		di as result "PLFS `y' done"
-	}
-
-	*--- 5.3 PLFS 2022, Stage 1 receiver ─► IND_2022_PLFS_v01_M_v02_A_s2s_HCES_to_PLFS.dta
 	glo input  "${work}"
 	glo output "${harmonized}"
-	do "${prep}\plfs\IND_2022_PLFS_v01_M_v02_A_s2s_HCES_to_PLFS.do"
+	do "${prep}\hces\\`hces_s2s'"
 }
+else {
+	di as text "HCES step skipped (run_hces = 0): using ${harmonized}\\${spdef_file}"
+	need_file "${harmonized}/${spdef_file}"
+}
+
+*--- 5.2 PLFS: text files (or official .dta) ─► M file ─► IND_<y>_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.dta
+foreach y of local plfs_years {
+	if `y' < `plfs_from' continue
+	glo input  "${rootdatalib}\IND\IND_`y'_PLFS\IND_`y'_PLFS_v01_M\Data\Original"
+	glo output "${work}"
+	local src : list y in plfs_dta_years
+	if `src' do "${prep}\plfs\IND_`y'_PLFS-V1_v01_M_dta.do"     // official .dta
+	else     do "${prep}\plfs\IND_`y'_PLFS-V1_v01_M.do"         // MoSPI text files
+
+	glo input  "${work}"
+	glo output "${harmonized}"
+	do "${prep}\plfs\IND_`y'_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.do"
+	di as result "PLFS `y' done"
+}
+
+*--- 5.3 PLFS anchor round, Stage 1 receiver ─► IND_<y>_PLFS_..._HCES_to_PLFS.dta (uses the M file of 5.2)
+glo input  "${work}"
+glo output "${harmonized}"
+do "${prep}\plfs\\`s1_do'"
 
 *-------------------------------------------------------------------------------
 * 6. Done

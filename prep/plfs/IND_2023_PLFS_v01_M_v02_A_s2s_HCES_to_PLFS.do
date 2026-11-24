@@ -1,6 +1,6 @@
 	
 *<_Datalibweb request_>
-use "C:\Users\wb587758\OneDrive - WBG\IND\S2S\2023-24\Data\Stage 2\Raw\IND_2023_PLFS\IND_2023_PLFS_v01_M\Data\Stata\IND_2023_PLFS-V1_v01_M.dta", clear 
+use "${input}\IND_2023_PLFS-V1_v01_M.dta", clear 
 *<_Datalibweb request_>
 
 gen countrycode = "IND"
@@ -590,7 +590,7 @@ gen consumption_pc = hh_usual_cons_rs/hh_size
 
 * Temporal deflation
 preserve 
-use "${rootdatalib2}\\Aux_Data\\IND_allyears_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS_cpi.dta", clear  
+use "${s2s_inputs}\IND_allyears_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS_cpi.dta", clear  
 keep if h_head==1
 keep year hhid cpi_monthly
 tempfile cpi 
@@ -601,13 +601,14 @@ merge m:1 year hhid using `cpi', keepusing(cpi_monthly)  keep(match master)
 tab _merge
 drop _merge
 
-notes: Average CPI during HCES 2022-23 months was 177.7042
+notes: Average CPI during the anchor months: ${anchor_cpi} (set in prep/00_master.do)
 
-replace consumption_pc = consumption_pc*177.7042/cpi_monthly
+replace consumption_pc = consumption_pc*${anchor_cpi}/cpi_monthly
 
 
 
-/*
+/* Not used for 2023-24: the corrected Assam weights exist only for PLFS 2022-23
+   (checked Nov 2026: the Sep 2026 file has the MoSPI weights)
 *India team corrected weights for Assam
 preserve
 use "${input}\PLFS 23 24 new weights.dta", clear
@@ -636,7 +637,7 @@ rename urb urban
 
 * Spatial deflation
 preserve 
-use "${rootdatalib2}\\Aux_Data\\Sp_deflators_HCES_23.dta", clear
+use "${harmonized}/${spdef_file}", clear
 *rename urb urban
 tempfile spdef
 save `spdef', replace

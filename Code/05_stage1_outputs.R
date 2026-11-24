@@ -1,5 +1,9 @@
 #Graphs and tables
 
+# labels of the anchor round, e.g. "2022 prices" and "(2022-23)"
+lab_prices <- paste0(anchor_year, " prices")
+lab_round  <- sprintf("(%d-%02d)", anchor_year, (anchor_year + 1) %% 100)
+
 ####Figure 3####
 
 #2022 HCES official and PLFS abbreviated consumption density plot
@@ -22,9 +26,9 @@ df=rbind(subset(hces,select=c(survey,welfare,weight)),
 ggplot(na.omit(df), aes(x = welfare, weight = weight,
                         fill = survey)) +
   geom_density(alpha = 0.4, adjust=1.5) +
-  labs(x = "Log Consumption (2022 prices, spatially adjusted)",
+  labs(x = paste0("Log Consumption (", lab_prices, ", spatially adjusted)"),
        y = "Density",
-       title = "Official (HCES) and Abbreviated (PLFS) Log Consumption Aggregate (2022-23)")
+       title = paste("Official (HCES) and Abbreviated (PLFS) Log Consumption Aggregate", lab_round))
 
 ggsave(paste(run_path,
              "/figures/Figure 3.png",sep=""),
@@ -103,7 +107,7 @@ ggplot(combined_data, aes(
   ) +
   scale_fill_viridis_d(guide = "none") +
   labs(
-    x = "Log Consumption (abbreviated, 2022 prices, spatially adjusted)",
+    x = paste0("Log Consumption (abbreviated, ", lab_prices, ", spatially adjusted)"),
     y = "Year",
     title = "Log Abbreviated Consumption Density and Median by Sector and Year"
   ) +
@@ -267,7 +271,7 @@ ggplot(df, aes(x = log(mpce_sp_def_ind), weight = pop_wgt,
   geom_density(alpha = 0.4, adjust=1.5) +
   labs(x = "Log Consumption",
        y = "Density",
-       title = "Original and Imputed Log Consumption by Survey (2022-23)")
+       title = paste("Original and Imputed Log Consumption by Survey", lab_round))
 
 ggsave(paste(run_path,
              "/figures/figure 8a.png",sep=""),
@@ -292,7 +296,7 @@ ggplot(df_ecdf, aes(x = log(mpce_sp_def_ind), y = ecdf, color = survey)) +
   geom_step() +
   labs(x = "Log Consumption",
        y = "Density",
-       title = "ECDF of Original and Imputed Log Consumption by survey (2022-23)")+
+       title = paste("ECDF of Original and Imputed Log Consumption by survey", lab_round))+
   geom_vline(xintercept = linelic,linetype="dashed",size=0.5)+
   geom_vline(xintercept = linelmic,linetype="dashed",size=0.5)+
   geom_vline(xintercept = lineumic,linetype="dashed",size=0.5)+

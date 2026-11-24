@@ -21,6 +21,7 @@ for (d in c(s2s_root, inputs_path, harmonized_path)) {
 # Run folder: <output_path>/<exercise>/<date_time>_<nsim1>x<nsim2>/
 #===============================================================================
 run_name <- paste0(format(Sys.time(), "%Y-%m-%d_%H%M"), "_", nsim1, "x", nsim2)
+yy <- sprintf("%02d", anchor_year %% 100)   # two-digit anchor year in file names (Simulations22_..., Imputed_PLFS_22_...)
 run_path <- file.path(output_path, exercise, run_name)
 for (d in c("data", "models", "tables", "figures", "logs")) {
   dir.create(file.path(run_path, d), recursive = TRUE, showWarnings = FALSE)

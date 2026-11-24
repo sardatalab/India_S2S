@@ -46,7 +46,7 @@ prep_plfs_s2 <- function(df, ref_year) {
 plfs.don=read_dta(file.path(harmonized_path, sprintf(plfs_s2_file, anchor_year)))
 #We bring the dataset containing the imputed consumption
 plfs.imp=read_dta(paste(run_path,
-          "/data/Imputed_PLFS_22_match.dta",sep=""))
+          "/data/Imputed_PLFS_", yy, "_match.dta",sep=""))
 plfs.imp=subset(plfs.imp,select=c(hhid,mpce_sp_def_ind))
 plfs.don=merge(plfs.don,plfs.imp,by="hhid",all.x=TRUE)
 rm(plfs.imp)

@@ -305,7 +305,19 @@ merge m:1 hhid using `control'
 drop if _merge!=3
 drop _merge
 
-merge m:1 hhid using "${output}\IND_PRIMUS_2023-24_v2.dta", keepusing(welfaredef_final)
+* hhid in the format of PRIMUS / INTPOV (FSU, stratum and household number without leading zeros,
+* e.g. 22300101 -> 2230011). With the MoSPI format the PRIMUS merge failed for 166,006 households;
+* this replaces the manual step correct_hhid.do (checked: PRIMUS v2 = INTPOV mpce_2023_all, Nov 2026)
+replace hhid = string(real(substr(hhid,1,5))) + string(real(substr(hhid,6,1))) + string(real(substr(hhid,7,2)))
+isid hhid pid
+
+merge m:1 hhid using "${s2s_inputs}\IND_PRIMUS_2023-24_v2.dta", keepusing(welfaredef_final) keep(master match)
+count if _merge == 1
+if r(N) > 0 {
+	di as error "HCES 2023-24: `r(N)' persons do not match PRIMUS v2 on hhid"
+	exit 459
+}
+drop _merge
 
 save "${output}\IND_2023-24_HCES_v02_M.dta", replace
 
