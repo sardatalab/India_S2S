@@ -15,7 +15,7 @@
 * Status
 *   fy2022_backcast : validated (Nov 2026): reproduces the note's harmonized files exactly
 *   fy2023          : ready to test (HCES 2023-24 → PLFS 2023-24, Stage 1)
-*   cy2023_forward  : not yet
+*   cy2023_forward  : HCES calendar year 2023 ready to test; PLFS CY steps to come
 *===============================================================================
 
 args arg_exercise arg_root arg_repo      // only used when called from RUN_S2S.R
@@ -92,8 +92,20 @@ else if "`exercise'" == "fy2023" {
 	local extra_inputs
 }
 else if "`exercise'" == "cy2023_forward" {
-	di as error "Exercise `exercise' is not in the master yet (next steps)."
-	exit 198
+	glo harm_folder "CY2023"
+	glo anchor_cpi  181.7875                    // average CPI over Jan-Dec 2023
+	glo cpi_fy22    177.7042                    // round averages, to bring the HCES welfare to CY2023 prices
+	glo cpi_fy23    186.7333
+	glo spdef_file  "Sp_deflators_HCES_CY23.dta"
+	glo fy22        "${s2s_root}\harmonized\FY2022"   // validated FY files (run fy2022_backcast and fy2023 first)
+	glo fy23        "${s2s_root}\harmonized\FY2023"
+	glo plfs_cy23   "${rootdatalib}\IND\IND_2023_PLFS\IND_2023_PLFS_v02_M\Data\Stata\IND_2023_PLFS_v02_M.dta"   // SARLAB, calendar year
+	local primus    "IND_PRIMUS_2023-24_v2.dta"
+	local cy_files  "${fy22}\HCES22_s2s.dta" "${fy22}\_work\IND_2022-23_HCES_v02_M.dta" "${fy23}\HCES23_s2s.dta" "${fy23}\_work\IND_2023-24_HCES_v02_M.dta" "${plfs_cy23}" "${s2s_root}\inputs\IND_PRIMUS_2022-23.dta" "${s2s_root}\inputs\IND_CYyears_PLFS_V1_final_v01_M_cpi.dta"
+	local cy_s2     "2023 IND_2023_PLFS_v02_M_v01_A_s2s_PLFS_to_PLFS.do 2024 IND_2024_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.do 2025 IND_2025_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS.do"
+	foreach y in 2024 2025 {
+		local cy_files `"`cy_files' "${rootdatalib}\IND\IND_`y'_PLFS\IND_`y'_PLFS_v01_M\Data\Stata\IND_`y'_PLFS_v01_M.dta""'
+	}
 }
 else {
 	di as error "Unknown exercise: `exercise'"
@@ -134,8 +146,15 @@ end
 need_dir  "${prep}"
 need_dir  "${s2s_inputs}"
 need_dir  "${work}"
-need_dir  "`hces_raw'"
-need_file "`hces_raw'\\`hces_lvl1'"
+if "`exercise'" == "cy2023_forward" {
+	foreach f of local cy_files {
+		need_file "`f'"
+	}
+}
+else {
+	need_dir  "`hces_raw'"
+	need_file "`hces_raw'\\`hces_lvl1'"
+}
 need_file "${s2s_inputs}\\`primus'"
 need_file "${s2s_inputs}\IND_allyears_PLFS_v01_M_v01_A_s2s_PLFS_to_PLFS_cpi.dta"
 foreach f of local extra_inputs {
@@ -166,8 +185,29 @@ di as result "Anchor CPI: ${anchor_cpi}"
 * 5. Run (the same steps for every exercise; files and parameters from section 3)
 *===============================================================================
 
+*--- CY2023: HCES calendar year from the validated FY files; PLFS steps to come
+if "`exercise'" == "cy2023_forward" {
+	glo output "${harmonized}"
+	do "${prep}\hces\IND_2023_HCES_CY_s2s_from_FY.do"
+	* PLFS CY2023, Stage 1 receiver (SARLAB v02) ─► IND_2023_PLFS_CY_s2s_HCES_to_PLFS.dta
+	do "${prep}\plfs\IND_2023_PLFS_v02_M_v01_A_s2s_HCES_to_PLFS.do"
+	* PLFS CY2023, CY2024, CY2025, Stage 2 ─► IND_<y>_PLFS_CY_s2s_PLFS_to_PLFS.dta
+	local n : word count `cy_s2'
+	forvalues i = 1(2)`n' {
+		local y : word `i' of `cy_s2'
+		local f : word `=`i'+1' of `cy_s2'
+		do "${prep}\plfs\\`f'"
+		di as result "PLFS CY`y' done"
+	}
+	local plfs_years
+	local s1_do
+}
+
 *--- 5.1 HCES: survey levels ─► M file ─► HCES<yy>_s2s.dta + spatial deflators
-if `run_hces' {
+if "`exercise'" == "cy2023_forward" {
+	* done above
+}
+else if `run_hces' {
 	glo input  "`hces_raw'"
 	glo output "${work}"
 	do "${prep}\hces\\`hces_m'"
@@ -197,9 +237,11 @@ foreach y of local plfs_years {
 }
 
 *--- 5.3 PLFS anchor round, Stage 1 receiver ─► IND_<y>_PLFS_..._HCES_to_PLFS.dta (uses the M file of 5.2)
-glo input  "${work}"
-glo output "${harmonized}"
-do "${prep}\plfs\\`s1_do'"
+if "`s1_do'" != "" {
+	glo input  "${work}"
+	glo output "${harmonized}"
+	do "${prep}\plfs\\`s1_do'"
+}
 
 *-------------------------------------------------------------------------------
 * 6. Done

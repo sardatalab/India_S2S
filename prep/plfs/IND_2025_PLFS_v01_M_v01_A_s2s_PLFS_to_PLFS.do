@@ -22,13 +22,6 @@ local vm			"01"
 local type			"SARLAB"
 local surveyfolder	"`countrycode'_`year'_`survey'"
 global surveydata	"${rootsarlab}/`countrycode'/`surveyfolder'/`surveyfolder'_v`vm'_M/Data/Stata"
-global output		"${rootsarlab}/`countrycode'/`surveyfolder'/`surveyfolder'_v`vm'_M_v`va'_A_`type'/Data/Harmonized"
-global rootlabels   "${rootdofiles}/_aux"
-cap mkdir 			"${rootsarlab}/`countrycode'/`surveyfolder'"
-cap mkdir 			"${rootsarlab}/`countrycode'/`surveyfolder'/`surveyfolder'_v`vm'_M_v`va'_A_`type'"
-cap mkdir 			"${rootsarlab}/`countrycode'/`surveyfolder'/`surveyfolder'_v`vm'_M_v`va'_A_`type'/Data"
-cap mkdir 			"${rootsarlab}/`countrycode'/`surveyfolder'/`surveyfolder'_v`vm'_M_v`va'_A_`type'/Data/Harmonized"
-cap mkdir 			"${rootsarlab}/`countrycode'/`surveyfolder'/`surveyfolder'_v`vm'_M_v`va'_A_`type'/Program"
 *<_Program setup_>
 
 *<_Datalibweb request_>
@@ -972,46 +965,25 @@ gen shr_goodsvrs = good_srvs/exp_total
 gen shr_clothing = exp_clothing/exp_total
 gen shr_durables = exp_durables/exp_total
 
-keep hhid pid strata psu weight year hh_size hh_size_sq urban state state_1-state_36 hh_type hhtype_1-hhtype_8 hh_head_age hh_age_avg hh_size_age0-hh_size_age65plus hh_sh_age0-hh_sh_age65plus hh_sh_age0_4 hh_dep_ratio flag1_depen hh_head_male hh_sh_female hh_sh_male flag2_sex hh_sex_ratio hh_head_nm hh_head_m hh_head_w hh_head_d hh_head_hin hh_head_nhin hh_head_msl hh_head_bud hh_head_chr hh_head_sik hh_head_oth hh_head_tribe hh_head_caste hh_head_back hh_head_other hh_head_lit hh_head_ilit hh_sh_lit hh_sh_ilit hh_sh1564_lit hh_head_educ hh_mx_educ hh_avg_educ hh_sp_educ hh_head_educ0 hh_head_educ_pri hh_head_educ_prc hh_head_educ_sei hh_head_educ_sec hh_head_educ_ter hh_sp_educ0 hh_sp_educ_pri hh_sp_educ_prc hh_sp_educ_sei hh_sp_educ_sec hh_sp_educ_ter flag3_spouse hh_head_ls_wrk hh_head_ls_u hh_head_ls_nlf hh_head_wrk_salreg hh_head_wrk_salcas hh_head_wrk_self hh_head_wrk_unp hh_head_sect_1-hh_head_sect_10 hh_head_occ_1-hh_head_occ_10 hh_head_job_contract hh_head_paidleave hh_head_pension hh_head_gratuity hh_head_health flag4_head_lab hh_sh_ls_wrk hh_sh_wrk_salreg hh_sh_wrk_salcas hh_sh_wrk_selfem hh_sh_wrk_unpaid hh_sh_sect_1-hh_sh_sect_10 hh_sh_occ_1-hh_sh_occ_10 hh_sh_job_contract hh_sh_paidleave hh_sh_pension hh_sh_gratuity hh_sh_health flag5_all_lab regular_wages casual_wages self_income total_labor shr_regwages shr_caswages shr_selfinc flag6_income shr_goodsvrs shr_clothing shr_durables consumption_pc relationtohead month land_possessed land_leased_out rent_received_from_land_building interest_from_savings pension remittances total_income
+* Revamped PLFS 2025 income variables: kept when they exist in the SARLAB file (not used by the S2S models)
+local extra ""
+foreach v in land_possessed land_leased_out rent_received_from_land_building interest_from_savings pension remittances total_income {
+	cap confirm variable `v'
+	if !_rc local extra "`extra' `v'"
+	else di as text "(PLFS 2025: `v' is not in the SARLAB file, not kept)"
+}
+keep hhid pid strata psu weight year hh_size hh_size_sq urban state state_1-state_36 hh_type hhtype_1-hhtype_8 hh_head_age hh_age_avg hh_size_age0-hh_size_age65plus hh_sh_age0-hh_sh_age65plus hh_sh_age0_4 hh_dep_ratio flag1_depen hh_head_male hh_sh_female hh_sh_male flag2_sex hh_sex_ratio hh_head_nm hh_head_m hh_head_w hh_head_d hh_head_hin hh_head_nhin hh_head_msl hh_head_bud hh_head_chr hh_head_sik hh_head_oth hh_head_tribe hh_head_caste hh_head_back hh_head_other hh_head_lit hh_head_ilit hh_sh_lit hh_sh_ilit hh_sh1564_lit hh_head_educ hh_mx_educ hh_avg_educ hh_sp_educ hh_head_educ0 hh_head_educ_pri hh_head_educ_prc hh_head_educ_sei hh_head_educ_sec hh_head_educ_ter hh_sp_educ0 hh_sp_educ_pri hh_sp_educ_prc hh_sp_educ_sei hh_sp_educ_sec hh_sp_educ_ter flag3_spouse hh_head_ls_wrk hh_head_ls_u hh_head_ls_nlf hh_head_wrk_salreg hh_head_wrk_salcas hh_head_wrk_self hh_head_wrk_unp hh_head_sect_1-hh_head_sect_10 hh_head_occ_1-hh_head_occ_10 hh_head_job_contract hh_head_paidleave hh_head_pension hh_head_gratuity hh_head_health flag4_head_lab hh_sh_ls_wrk hh_sh_wrk_salreg hh_sh_wrk_salcas hh_sh_wrk_selfem hh_sh_wrk_unpaid hh_sh_sect_1-hh_sh_sect_10 hh_sh_occ_1-hh_sh_occ_10 hh_sh_job_contract hh_sh_paidleave hh_sh_pension hh_sh_gratuity hh_sh_health flag5_all_lab regular_wages casual_wages self_income total_labor shr_regwages shr_caswages shr_selfinc flag6_income shr_goodsvrs shr_clothing shr_durables consumption_pc relationtohead month `extra'
 
 order hhid pid strata psu weight year hh_size hh_size_sq urban state state_1-state_36 hh_type hhtype_1-hhtype_8 hh_head_age hh_age_avg hh_size_age0-hh_size_age65plus hh_sh_age0-hh_sh_age65plus hh_sh_age0_4 hh_dep_ratio flag1_depen hh_head_male hh_sh_female hh_sh_male flag2_sex hh_sex_ratio hh_head_nm hh_head_m hh_head_w hh_head_d hh_head_hin hh_head_nhin hh_head_msl hh_head_bud hh_head_chr hh_head_sik hh_head_oth hh_head_tribe hh_head_caste hh_head_back hh_head_other hh_head_lit hh_head_ilit hh_sh_lit hh_sh_ilit hh_sh1564_lit hh_head_educ hh_mx_educ hh_avg_educ hh_sp_educ hh_head_educ0 hh_head_educ_pri hh_head_educ_prc hh_head_educ_sei hh_head_educ_sec hh_head_educ_ter hh_sp_educ0 hh_sp_educ_pri hh_sp_educ_prc hh_sp_educ_sei hh_sp_educ_sec hh_sp_educ_ter flag3_spouse hh_head_ls_wrk hh_head_ls_u hh_head_ls_nlf hh_head_wrk_salreg hh_head_wrk_salcas hh_head_wrk_self hh_head_wrk_unp hh_head_sect_1-hh_head_sect_10 hh_head_occ_1-hh_head_occ_10 hh_head_job_contract hh_head_paidleave hh_head_pension hh_head_gratuity hh_head_health flag4_head_lab hh_sh_ls_wrk hh_sh_wrk_salreg hh_sh_wrk_salcas hh_sh_wrk_selfem hh_sh_wrk_unpaid hh_sh_sect_1-hh_sh_sect_10 hh_sh_occ_1-hh_sh_occ_10 hh_sh_job_contract hh_sh_paidleave hh_sh_pension hh_sh_gratuity hh_sh_health flag5_all_lab regular_wages casual_wages self_income total_labor shr_regwages shr_caswages shr_selfinc flag6_income 
 
-/*
-* Temporal deflation
-preserve 
-use "${rootdatalib}\\`code'\\harm_plfs.dta", clear  
-keep if rel_hh=="1"
-keep if year==7
-replace year = 2023
-tempfile plfs 
-save `plfs', replace
-restore 
-
-merge m:1 hhid using `plfs', keepusing(cpi_monthly)
-aaa
-replace regular_wages = regular_wages*177.792/cpi_monthly
-replace casual_wages = casual_wages*177.792/cpi_monthly
-replace self_income = self_income*177.792/cpi_monthly
-replace total_labor = total_labor*177.792/cpi_monthly
-replace consumption_pc = consumption_pc*177.792/cpi_monthly
+* Prices (CY2023) and spatial adjustment: prep/plfs/IND_PLFS_CY_prices.do (Nov 2026; replaces the
+* commented block: harm_plfs year==7, 177.792, Sp_deflators_HCES_22)
+do "${prep}\plfs\IND_PLFS_CY_prices.do" weight urban regular_wages casual_wages self_income total_labor consumption_pc
 
 gen regular_wages_pc = regular_wages/hh_size
 gen  casual_wages_pc = casual_wages/hh_size
 gen   self_income_pc = self_income/hh_size
 gen   total_labor_pc = total_labor/hh_size
-
-* Spatial deflation
-preserve 
-use "${rootdatalib}\\`code'\\Sp_deflators_HCES_22.dta", clear
-rename urb urban
-tempfile spdef
-save `spdef', replace
-restore 
-
-capture drop _merge
-merge m:1 state urban using `spdef'
-drop if _merge!=3 
-drop _merge 
 
 sum   spdef [aw=weight] 
 local mean_nat = r(mean)
@@ -1028,12 +1000,12 @@ foreach var in `lista' {
 	}
 	
 * Consumption deciles	
-cuantiles consumption_pc_adj [w=weight], n(10) orden_aux(hhid pid) g(decile_national)
+xtile decile_national = consumption_pc_adj [w=weight], nq(10)
 keep if relationtohead==1
-drop spdef cpi_monthly relationtohead pid
-*/
-keep if relationtohead==1
-save "${roots2s}/`countrycode'/Data/`surveyfolder'_v`vm'_M_v`va'_s2s_PLFS_to_PLFS.dta", replace
+isid hhid
+drop spdef relationtohead pid
+
+save "${output}\IND_`year'_PLFS_CY_s2s_PLFS_to_PLFS.dta", replace
 
 
 sum [w=weight]

@@ -142,12 +142,12 @@ gini_cons_abb=c(with(df[df$survey=="PLFS",],gini.wtd(welfare,weight)),
                 with(df[df$survey=="PLFS" & df$urban==1,],gini.wtd(welfare,weight)))
 
 
-pov_2022=data.frame(sect=c("national","rural","urban"),
+pov_anchor=data.frame(sect=c("national","rural","urban"),
                   rbind(tab1[tab1$survey=="HCES",c("povlic","povlmic","povumic")],
                         tab2[tab2$survey=="HCES",c("povlic","povlmic","povumic")]),
                   gini_cons_imp,gini_cons_abb,year=anchor_year)
 
-tab_export=bind_rows(pov_results,pov_2022)
+tab_export=bind_rows(pov_results,pov_anchor)
 row.names(tab_export)=NULL
 # Export table with outputs
 write.csv(tab_export,file=paste(run_path,

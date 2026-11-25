@@ -385,7 +385,7 @@ ggplot(plfs.don, aes(x = ratio, y = fct_rev(quintile),
   geom_density_ridges(alpha = 0.5, scale = 1.5, rel_min_height = 0.01) +
   labs(x = "Ratio",
        y = "Quintile",
-       title = "Ridgeline Plot of MMRP to Abbreviate Consumption (2022-23)") +
+       title = paste("Ridgeline Plot of MMRP to Abbreviate Consumption", lab_round)) +
   xlim(c(0, 7.5)) +
   theme_ridges() + 
   theme(legend.position = "none") 

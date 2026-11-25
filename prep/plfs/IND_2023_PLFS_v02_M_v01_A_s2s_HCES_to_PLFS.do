@@ -22,13 +22,6 @@ local vm			"02"
 local type			"SARLAB"
 local surveyfolder	"`countrycode'_`year'_`survey'"
 global surveydata	"${rootsarlab}/`countrycode'/`surveyfolder'/`surveyfolder'_v`vm'_M/Data/Stata"
-global output		"${rootsarlab}/`countrycode'/`surveyfolder'/`surveyfolder'_v`vm'_M_v`va'_A_`type'/Data/Harmonized"
-global rootlabels   "${rootdofiles}/_aux"
-cap mkdir 			"${rootsarlab}/`countrycode'/`surveyfolder'"
-cap mkdir 			"${rootsarlab}/`countrycode'/`surveyfolder'/`surveyfolder'_v`vm'_M_v`va'_A_`type'"
-cap mkdir 			"${rootsarlab}/`countrycode'/`surveyfolder'/`surveyfolder'_v`vm'_M_v`va'_A_`type'/Data"
-cap mkdir 			"${rootsarlab}/`countrycode'/`surveyfolder'/`surveyfolder'_v`vm'_M_v`va'_A_`type'/Data/Harmonized"
-cap mkdir 			"${rootsarlab}/`countrycode'/`surveyfolder'/`surveyfolder'_v`vm'_M_v`va'_A_`type'/Program"
 *<_Program setup_>
 
 *<_Datalibweb request_>
@@ -619,8 +612,19 @@ drop auxi* total auxtot
 * Welfare variable
 gen consumption_pc = hh_usual_cons_rs/hh_size
 
+* Prices (CY2023) and spatial adjustment: prep/plfs/IND_PLFS_CY_prices.do (Nov 2026)
+do "${prep}\plfs\IND_PLFS_CY_prices.do" hhwt urb consumption_pc
+sum   spdef [aw=hhwt]
+local mean_nat = r(mean)
+sum consumption_pc [aw=hhwt] if relationtohead==1
+local avg = r(mean)
+gen   consumption_pc_adj = consumption_pc*`mean_nat'/spdef
+sum   consumption_pc_adj [aw=hhwt] if relationtohead==1
+local avg2 = r(mean)
+replace consumption_pc_adj = consumption_pc_adj*`avg'/`avg2'
+
 * Consumption deciles
-cuantiles consumption_pc [w=hhwt], n(10) orden_aux(hhid pid) g(decile_national)
+xtile decile_national = consumption_pc_adj [w=hhwt], nq(10)
 
 *** SHARES CONSUMPTION 
 egen   good_srvs = rsum(hh_usual_cons_gs hh_imputed_cons_rs_hg hh_imputed_cons_rs_ik)
@@ -634,10 +638,10 @@ gen shr_durables = exp_durables/exp_total
 
 keep if relationtohead==1 
 
-keep hhid year hhwt hh_size hh_size_sq urb state_1-state_37 hhtype_1-hhtype_8 hh_head_age hh_age_avg hh_size_age0 hh_size_age1 hh_size_age2 hh_size_age3 hh_size_age4 hh_size_age0_14 hh_size_age15_64 hh_size_age65plus hh_sh_age0 hh_sh_age1 hh_sh_age2 hh_sh_age3 hh_sh_age4 hh_sh_age0_14 hh_sh_age15_64 hh_sh_age65plus hh_sh_age0_4 hh_dep_ratio hh_head_male hh_sh_female hh_sh_male hh_sex_ratio hh_head_nm hh_head_m hh_head_w hh_head_d hh_head_hin hh_head_nhin hh_head_msl hh_head_bud hh_head_chr hh_head_sik hh_head_oth hh_head_tribe hh_head_caste hh_head_back hh_head_other hh_head_lit hh_head_ilit hh_sh_lit hh_sh_ilit hh_sh1564_lit hh_head_educ hh_mx_educ hh_avg_educ hh_sp_educ hh_head_educ0 hh_head_educ_pri hh_head_educ_prc hh_head_educ_sei hh_head_educ_sec hh_head_educ_ter hh_sp_educ0 hh_sp_educ_pri hh_sp_educ_prc hh_sp_educ_sei hh_sp_educ_sec hh_sp_educ_ter hh_without_spouse max_inc_wrk_sal max_inc_wrk_self max_inc_wrk_agr max_inc_wrk_ind max_inc_wrk_srv max_null decile_national consumption_pc shr*
+keep hhid year hhwt hh_size hh_size_sq urb state_1-state_37 hhtype_1-hhtype_8 hh_head_age hh_age_avg hh_size_age0 hh_size_age1 hh_size_age2 hh_size_age3 hh_size_age4 hh_size_age0_14 hh_size_age15_64 hh_size_age65plus hh_sh_age0 hh_sh_age1 hh_sh_age2 hh_sh_age3 hh_sh_age4 hh_sh_age0_14 hh_sh_age15_64 hh_sh_age65plus hh_sh_age0_4 hh_dep_ratio hh_head_male hh_sh_female hh_sh_male hh_sex_ratio hh_head_nm hh_head_m hh_head_w hh_head_d hh_head_hin hh_head_nhin hh_head_msl hh_head_bud hh_head_chr hh_head_sik hh_head_oth hh_head_tribe hh_head_caste hh_head_back hh_head_other hh_head_lit hh_head_ilit hh_sh_lit hh_sh_ilit hh_sh1564_lit hh_head_educ hh_mx_educ hh_avg_educ hh_sp_educ hh_head_educ0 hh_head_educ_pri hh_head_educ_prc hh_head_educ_sei hh_head_educ_sec hh_head_educ_ter hh_sp_educ0 hh_sp_educ_pri hh_sp_educ_prc hh_sp_educ_sei hh_sp_educ_sec hh_sp_educ_ter hh_without_spouse max_inc_wrk_sal max_inc_wrk_self max_inc_wrk_agr max_inc_wrk_ind max_inc_wrk_srv max_null decile_national consumption_pc* shr*
 
-order hhid year hhwt hh_size hh_size_sq urb state_1-state_37 hhtype_1-hhtype_8 hh_head_age hh_age_avg hh_size_age0 hh_size_age1 hh_size_age2 hh_size_age3 hh_size_age4 hh_size_age0_14 hh_size_age15_64 hh_size_age65plus hh_sh_age0 hh_sh_age1 hh_sh_age2 hh_sh_age3 hh_sh_age4 hh_sh_age0_14 hh_sh_age15_64 hh_sh_age65plus hh_sh_age0_4 hh_dep_ratio hh_head_male hh_sh_female hh_sh_male hh_sex_ratio hh_head_nm hh_head_m hh_head_w hh_head_d hh_head_hin hh_head_nhin hh_head_msl hh_head_bud hh_head_chr hh_head_sik hh_head_oth hh_head_tribe hh_head_caste hh_head_back hh_head_other hh_head_lit hh_head_ilit hh_sh_lit hh_sh_ilit hh_sh1564_lit hh_head_educ hh_mx_educ hh_avg_educ hh_sp_educ hh_head_educ0 hh_head_educ_pri hh_head_educ_prc hh_head_educ_sei hh_head_educ_sec hh_head_educ_ter hh_sp_educ0 hh_sp_educ_pri hh_sp_educ_prc hh_sp_educ_sei hh_sp_educ_sec hh_sp_educ_ter hh_without_spouse max_inc_wrk_sal max_inc_wrk_self max_inc_wrk_agr max_inc_wrk_ind max_inc_wrk_srv max_null decile_national consumption_pc shr*
+order hhid year hhwt hh_size hh_size_sq urb state_1-state_37 hhtype_1-hhtype_8 hh_head_age hh_age_avg hh_size_age0 hh_size_age1 hh_size_age2 hh_size_age3 hh_size_age4 hh_size_age0_14 hh_size_age15_64 hh_size_age65plus hh_sh_age0 hh_sh_age1 hh_sh_age2 hh_sh_age3 hh_sh_age4 hh_sh_age0_14 hh_sh_age15_64 hh_sh_age65plus hh_sh_age0_4 hh_dep_ratio hh_head_male hh_sh_female hh_sh_male hh_sex_ratio hh_head_nm hh_head_m hh_head_w hh_head_d hh_head_hin hh_head_nhin hh_head_msl hh_head_bud hh_head_chr hh_head_sik hh_head_oth hh_head_tribe hh_head_caste hh_head_back hh_head_other hh_head_lit hh_head_ilit hh_sh_lit hh_sh_ilit hh_sh1564_lit hh_head_educ hh_mx_educ hh_avg_educ hh_sp_educ hh_head_educ0 hh_head_educ_pri hh_head_educ_prc hh_head_educ_sei hh_head_educ_sec hh_head_educ_ter hh_sp_educ0 hh_sp_educ_pri hh_sp_educ_prc hh_sp_educ_sei hh_sp_educ_sec hh_sp_educ_ter hh_without_spouse max_inc_wrk_sal max_inc_wrk_self max_inc_wrk_agr max_inc_wrk_ind max_inc_wrk_srv max_null decile_national consumption_pc* shr*
   
-save "${roots2s}/`countrycode'/data/`surveyfolder'_v`vm'_M_v`va'_A_s2s_HCES_to_PLFS.dta", replace
+save "${output}\IND_2023_PLFS_CY_s2s_HCES_to_PLFS.dta", replace
 
 sum [w=hhwt] 

@@ -24,7 +24,7 @@ rm(list = ls())
 
 exercise <- "fy2022_backcast"   # fy2022_backcast: HCES 2022-23 anchor, backward to PLFS 2017-2021 (July 2025 note)
                                 # fy2023:          HCES 2023-24 anchor, PLFS 2023-24, Stage 1 only
-                                # (to come: cy2023_forward)
+                                # cy2023_forward:  HCES calendar year 2023 anchor, forward to PLFS CY2024 and CY2025
 run_prep <- FALSE               # TRUE = rebuild the harmonized input files (Stata, prep/)
 run_s2s  <- TRUE                # TRUE = run Stage 1 and Stage 2 (R)
 
@@ -118,8 +118,27 @@ if (exercise == "fy2023") {
 }
 
 #---------------------------------------------------------------------------
-# cy2023_forward: to come
+# cy2023_forward: HCES calendar year 2023 anchor, forward to PLFS CY2024 and CY2025
+# (HCES CY2023 = 2022-23 panels 6-10 + 2023-24 panels 1-5, in CY2023 prices)
 #---------------------------------------------------------------------------
+if (exercise == "cy2023_forward") {
+  anchor_year  <- 2023
+  stage2_years <- 2024:2025
+  train_year   <- stage2_years[1]
+
+  harmonized_folder <- "CY2023"
+  hces_file    <- "HCES23CY_s2s.dta"
+  plfs_s1_file <- "IND_2023_PLFS_CY_s2s_HCES_to_PLFS.dta"
+  plfs_s2_file <- "IND_%d_PLFS_CY_s2s_PLFS_to_PLFS.dta"
+  states_file  <- "States.xlsx"
+
+  nsim1 = 10                       # quick test; 1000 for the full run
+  nsim2 = 10                       # quick test; 100 for the full run
+
+  cpi21 = 1.126928                 # CY2023 prices to 2021: cpi_master 181.7875 / 161.3125
+                                   # (the same ratio gives FY2022 and FY2023 within 0.05% of PIP's cpi21)
+  icp21 = 19.46895
+}
 
 if (!exists("anchor_year")) stop("No parameters for exercise '", exercise, "' in section 3")
 
